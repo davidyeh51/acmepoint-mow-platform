@@ -1,0 +1,2409 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-consulting-theme="hybrid">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%278%27 fill=%27%23051C2C%27/%3E%3Cpath d=%27M12 48h10V30H12zm15 0h10V18H27zm15 0h10V8H42z%27 fill=%27%230077C8%27/%3E%3Cpath d=%27M12 24l15-10 15 6 10-12%27 stroke=%27%23D97706%27 stroke-width=%273.5%27 fill=%27none%27 stroke-linecap=%27round%27/%3E%3C/svg%3E">
+<title>進金生能源 6692｜太陽光電維運管理智慧營運平台 (MOW 2.0)</title>
+<meta name="description" content="全方位整合 514 座光電案場（789.2 MW）全維度資料庫、461 筆待執行派工單（Work_List 逆向升級）、合約例行履約、作業紀錄表與 Supabase 雲端 BaaS 整合。">
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+<!-- Supabase JS SDK (CDN) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+/* ==========================================================================
+   ZERO-NOISE TRI-CONSULTING DESIGN SYSTEM (McKinsey / BCG / Accenture)
+   ========================================================================== */
+:root {
+  /* McKinsey Default Authority Palette */
+  --zn-primary: #051C2C;        /* 麥肯錫深海藍 Deep Navy */
+  --zn-primary-mid: #0F2942;    /* 次深海藍 */
+  --zn-accent: #0077C8;         /* 科技亮藍 Focal Accent */
+  --zn-accent-soft: #EBF5FF;    /* 焦點淺藍底 */
+  --zn-focus-amber: #B45309;    /* 關鍵結論琥珀金 */
+  --zn-focus-amber-bg: #FEF3C7; /* 關鍵結論淺金底 */
+  --zn-alert: #B91C1C;          /* 致命衝突警示紅 */
+  --zn-alert-bg: #FEF2F2;       /* 警示極淺紅底 */
+  --zn-success: #15803D;        /* 履約達標綠 */
+  --zn-success-bg: #F0FDF4;
+
+  /* Neutral Baseline Grayscale */
+  --ink: #0F172A;               /* 炭黑主字色 */
+  --ink-secondary: #334155;     /* 次要內文字色 */
+  --muted: #64748B;             /* 輔助灰階 */
+  --line: #CBD5E1;              /* 1pt 結構分隔線 */
+  --line-light: #E2E8F0;        /* 表格細分隔線 */
+  --paper: #F8FAFC;             /* 顧問簡報純淨極淺灰底 */
+  --card: #FFFFFF;              /* 純白卡片底 */
+  --surface-muted: #F1F5F9;     /* 基準對照灰階底 */
+}
+
+html[data-consulting-theme="bcg"] {
+  --zn-primary: #004F32;
+  --zn-primary-mid: #065F46;
+  --zn-accent: #10B981;
+  --zn-accent-soft: #ECFDF5;
+}
+html[data-consulting-theme="accenture"] {
+  --zn-primary: #1E1B4B;
+  --zn-primary-mid: #312E81;
+  --zn-accent: #8B5CF6;
+  --zn-accent-soft: #F5F3FF;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  line-height: 1.52;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- Top Bar ---------- */
+.topbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100; height: 54px;
+  display: flex; align-items: center; gap: 8px; padding: 0 16px;
+  background: var(--zn-primary); color: #fff;
+  border-bottom: 3px solid var(--zn-accent);
+  box-shadow: 0 2px 10px rgba(5,28,44,.18);
+}
+.topbar .brand {
+  display: flex; align-items: center; gap: 8px; margin-right: 8px;
+  white-space: nowrap; text-decoration: none; cursor: pointer;
+}
+.topbar .brand .mk {
+  width: 28px; height: 28px; border-radius: 4px;
+  background: linear-gradient(135deg, var(--zn-accent), #38BDF8);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 900; font-size: 14px; color: #fff;
+}
+.topbar .brand .tx {
+  font-weight: 800; font-size: .84rem; letter-spacing: .02em; color: #fff; line-height: 1.15;
+}
+.topbar .brand .tx small {
+  display: block; font-weight: 600; font-size: .62rem; letter-spacing: .06em; color: #93C5FD;
+}
+.topnav {
+  display: flex; gap: 4px; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none;
+}
+.topnav::-webkit-scrollbar { display: none; }
+.topnav a {
+  text-decoration: none; color: #CBD5E1; font-size: .78rem; font-weight: 600;
+  padding: 6px 9px; border-radius: 3px; white-space: nowrap; border: 1px solid transparent;
+  transition: all .15s ease; cursor: pointer; display: flex; align-items: center; gap: 4px;
+}
+.topnav a:hover { color: #fff; background: rgba(255,255,255,.12); }
+.topnav a.active { color: #fff; background: var(--zn-accent); font-weight: 700; }
+
+.topbar-actions {
+  display: flex; align-items: center; gap: 6px; white-space: nowrap;
+}
+.role-select, .theme-select {
+  background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.28);
+  border-radius: 3px; padding: 4px 6px; font-size: .70rem; font-weight: 700; cursor: pointer;
+}
+.role-select option, .theme-select option { color: #0F172A; background: #fff; }
+.btn-action {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #D97706; color: #fff; text-decoration: none;
+  font-size: .71rem; font-weight: 800; padding: 5px 9px; border-radius: 3px;
+  border: 1px solid #F59E0B; transition: all .15s ease; cursor: pointer;
+}
+.btn-action:hover { background: #B45309; }
+.btn-supabase {
+  background: #064E3B; border-color: #059669; color: #A7F3D0;
+  display: inline-flex; align-items: center; gap: 4px; font-size: .70rem; font-weight: 700;
+  padding: 4px 8px; border-radius: 3px; cursor: pointer; border: 1px solid #10B981;
+}
+.btn-supabase.connected { background: #065F46; color: #6EE7B7; border-color: #34D399; }
+.btn-supabase .dot {
+  width: 7px; height: 7px; border-radius: 50%; background: #9CA3AF; display: inline-block;
+}
+.btn-supabase.connected .dot { background: #10B981; box-shadow: 0 0 6px #34D399; }
+
+/* ---------- Views / Slides Canvas ---------- */
+.view { display: none; }
+.view.active { display: block; }
+.slide {
+  min-height: calc(100vh - 54px); padding: 70px 28px 50px;
+  max-width: 1480px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px;
+}
+
+/* ---------- Zero-Noise Top-Down Header ---------- */
+.slide-header {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;
+  padding-bottom: 10px; border-bottom: 2px solid var(--zn-primary);
+}
+.eyebrow {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  font-size: .71rem; font-weight: 800; letter-spacing: .08em; color: var(--zn-accent);
+  text-transform: uppercase; margin-bottom: 3px;
+}
+.slide-header h1, .slide-header h2 {
+  font-size: clamp(1.15rem, 1.8vw, 1.55rem); line-height: 1.3; font-weight: 900;
+  max-width: 52em; color: var(--zn-primary); letter-spacing: -.01em;
+}
+.slide-header .sub {
+  margin-top: 5px; color: var(--ink-secondary); font-size: .83rem; max-width: 80em;
+  line-height: 1.48; font-weight: 600; background: var(--surface-muted);
+  padding: 5px 12px; border-left: 3px solid var(--zn-accent); border-radius: 0 3px 3px 0;
+}
+.flags { display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end; max-width: 420px; }
+.flag {
+  font-size: .68rem; font-weight: 700; padding: 3px 8px; border-radius: 2px; white-space: nowrap;
+  background: var(--surface-muted); color: var(--ink-secondary); border: 1px solid var(--line);
+}
+.flag:first-child, .flag.primary {
+  background: var(--zn-primary); color: #fff; border-color: var(--zn-primary); font-weight: 800;
+}
+.flag.amber { background: var(--zn-focus-amber-bg); color: var(--zn-focus-amber); border-color: #FCD34D; font-weight: 800; }
+.flag.coral { background: var(--zn-alert-bg); color: var(--zn-alert); border-color: #FCA5A5; font-weight: 800; }
+.flag.green { background: var(--zn-success-bg); color: var(--zn-success); border-color: #86EFAC; font-weight: 800; }
+
+/* ---------- Metric Cards Grid (Bento) ---------- */
+.metric-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;
+}
+.metric {
+  background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--zn-primary);
+  border-radius: 3px; padding: 10px 14px; box-shadow: 0 1px 3px rgba(15,23,42,.03);
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+.metric .label { font-size: .70rem; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.metric .k {
+  font-size: clamp(1.3rem, 2vw, 1.75rem); font-weight: 900; line-height: 1.15;
+  color: var(--zn-primary); margin: 3px 0 2px; font-family: 'JetBrains Mono', tabular-nums, sans-serif;
+}
+.metric .t { font-size: .72rem; color: var(--ink-secondary); line-height: 1.35; }
+.metric.accent { border-left-color: var(--zn-accent); }
+.metric.accent .k { color: var(--zn-accent); }
+.metric.amber { border-left-color: var(--zn-focus-amber); background: #FFFBEB; }
+.metric.amber .k { color: var(--zn-focus-amber); }
+.metric.coral { border-left-color: var(--zn-alert); background: var(--zn-alert-bg); }
+.metric.coral .k { color: var(--zn-alert); }
+.metric.green { border-left-color: var(--zn-success); background: var(--zn-success-bg); }
+.metric.green .k { color: var(--zn-success); }
+
+/* ---------- Big Callout Banner ---------- */
+.big-callout {
+  background: var(--zn-primary); color: #fff;
+  border-left: 5px solid var(--zn-accent); border-radius: 3px; padding: 12px 18px;
+}
+.big-callout .label {
+  font-size: .66rem; letter-spacing: .08em; color: #93C5FD; font-weight: 800;
+  text-transform: uppercase; margin-bottom: 3px;
+}
+.big-callout .answer {
+  font-size: clamp(.95rem, 1.4vw, 1.15rem); font-weight: 800; line-height: 1.35;
+}
+.big-callout .more { margin-top: 4px; font-size: .80rem; color: #E2E8F0; line-height: 1.45; }
+
+/* ---------- Filter Bar ---------- */
+.filter-bar {
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  background: #fff; border: 1px solid var(--line); border-radius: 3px; padding: 8px 12px;
+}
+.filter-bar input[type="text"] {
+  flex: 2; min-width: 180px; padding: 5px 9px; font-size: .80rem;
+  border: 1px solid var(--line); border-radius: 3px; outline: none;
+}
+.filter-bar input[type="text"]:focus { border-color: var(--zn-accent); }
+.filter-bar select {
+  flex: 1; min-width: 120px; padding: 5px 8px; font-size: .80rem;
+  border: 1px solid var(--line); border-radius: 3px; background: #fff; outline: none;
+}
+.filter-bar .btn-clear {
+  padding: 5px 10px; font-size: .75rem; font-weight: 700;
+  background: var(--surface-muted); border: 1px solid var(--line); border-radius: 3px; cursor: pointer;
+}
+.filter-bar .btn-clear:hover { background: #E2E8F0; }
+.record-count { font-size: .75rem; font-weight: 700; color: var(--muted); margin-left: auto; }
+
+/* ---------- Tables ---------- */
+.table-wrap {
+  background: #fff; border: 1px solid var(--line); border-radius: 3px;
+  overflow-x: auto; box-shadow: 0 1px 3px rgba(15,23,42,.03);
+}
+table { width: 100%; border-collapse: collapse; font-size: .80rem; min-width: 960px; }
+th {
+  background: var(--zn-primary); color: #fff; text-align: left; font-weight: 700;
+  padding: 7px 10px; white-space: nowrap; font-size: .75rem; letter-spacing: .02em;
+  position: sticky; top: 0; z-index: 10;
+}
+td {
+  padding: 6px 10px; border-bottom: 1px solid var(--line-light); vertical-align: middle;
+  color: var(--ink-secondary);
+}
+tbody tr:nth-child(even) { background: #F8FAFC; }
+tbody tr:hover { background: #F1F5F9; }
+.badge {
+  display: inline-block; padding: 2px 6px; border-radius: 2px;
+  font-size: .68rem; font-weight: 700; white-space: nowrap;
+}
+.badge.green { background: #DCFCE7; color: #166534; }
+.badge.amber { background: #FEF3C7; color: #92400E; }
+.badge.red { background: #FEE2E2; color: #991B1B; }
+.badge.blue { background: #E0F2FE; color: #075985; }
+.badge.gray { background: #F1F5F9; color: #475569; }
+
+/* Traffic Light Dot */
+.traffic-dot {
+  width: 10px; height: 10px; border-radius: 50%; display: inline-block;
+}
+.traffic-dot.red { background: #DC2626; box-shadow: 0 0 5px rgba(220,38,38,.5); }
+.traffic-dot.yellow { background: #F59E0B; box-shadow: 0 0 5px rgba(245,158,11,.5); }
+.traffic-dot.green { background: #16A34A; box-shadow: 0 0 5px rgba(22,163,74,.5); }
+
+/* Buttons in Table */
+.action-btn-group { display: flex; gap: 4px; align-items: center; }
+.btn-icon {
+  width: 26px; height: 26px; border-radius: 3px; border: 1px solid var(--line);
+  background: #fff; display: flex; align-items: center; justify-content: center;
+  font-size: .78rem; cursor: pointer; transition: all .15s ease;
+}
+.btn-icon:hover { background: var(--zn-accent-soft); border-color: var(--zn-accent); color: var(--zn-accent); }
+.btn-icon.disabled { opacity: .28; cursor: not-allowed; pointer-events: none; }
+.btn-icon.complete:hover { background: #DCFCE7; border-color: #16A34A; color: #16A34A; }
+
+/* ---------- Pagination ---------- */
+.pagination {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 12px; background: #fff; border: 1px solid var(--line); border-top: none;
+  font-size: .75rem; color: var(--muted);
+}
+.page-btns { display: flex; gap: 3px; }
+.page-btn {
+  padding: 3px 8px; font-size: .73rem; font-weight: 700; background: #fff;
+  border: 1px solid var(--line); border-radius: 2px; cursor: pointer;
+}
+.page-btn.active { background: var(--zn-accent); color: #fff; border-color: var(--zn-accent); }
+.page-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ---------- Split Grids ---------- */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.three-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+@media(max-width: 960px) {
+  .two-col, .three-col { grid-template-columns: 1fr; }
+  .slide { padding: 65px 12px 50px; }
+}
+
+/* ---------- Cards ---------- */
+.card {
+  background: #fff; border: 1px solid var(--line); border-top: 3px solid var(--zn-primary);
+  border-radius: 3px; padding: 12px 16px; box-shadow: 0 1px 3px rgba(15,23,42,.03);
+}
+.card.amber { border-top-color: var(--zn-focus-amber); }
+.card.coral { border-top-color: var(--zn-alert); }
+.card.green { border-top-color: var(--zn-success); }
+.card h3 { font-size: .88rem; font-weight: 800; color: var(--zn-primary); margin-bottom: 5px; }
+.card p { font-size: .79rem; color: var(--ink-secondary); line-height: 1.45; }
+
+/* ---------- Modals ---------- */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(5,28,44,.6);
+  backdrop-filter: blur(2px); z-index: 200; justify-content: center; align-items: center;
+  padding: 16px;
+}
+.modal-overlay.active { display: flex; }
+.modal-box {
+  background: #fff; width: 100%; max-width: 920px; max-height: 92vh;
+  border-radius: 4px; box-shadow: 0 12px 36px rgba(0,0,0,.25);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.modal-box.large { max-width: 1060px; }
+.modal-header {
+  background: var(--zn-primary); color: #fff; padding: 12px 18px;
+  display: flex; justify-content: space-between; align-items: center;
+  border-bottom: 3px solid var(--zn-accent);
+}
+.modal-header h2 { font-size: 1.02rem; font-weight: 800; }
+.modal-header .close-btn {
+  background: none; border: none; color: #fff; font-size: 1.3rem; cursor: pointer;
+}
+.modal-body {
+  padding: 16px 20px; overflow-y: auto; flex: 1; font-size: .82rem;
+}
+.modal-footer {
+  padding: 10px 18px; background: var(--surface-muted); border-top: 1px solid var(--line);
+  display: flex; justify-content: flex-end; gap: 8px;
+}
+
+.detail-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px;
+}
+.detail-item {
+  background: var(--surface-muted); padding: 7px 10px; border-radius: 3px;
+  border-left: 3px solid var(--zn-primary);
+}
+.detail-item .label { font-size: .69rem; color: var(--muted); font-weight: 700; }
+.detail-item .value { font-size: .83rem; font-weight: 800; color: var(--ink); margin-top: 2px; }
+
+/* Forms */
+.form-row {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 10px;
+}
+.form-row.three { grid-template-columns: repeat(3, 1fr); }
+.form-group { display: flex; flex-direction: column; gap: 3px; }
+.form-group label { font-size: .75rem; font-weight: 700; color: var(--ink-secondary); }
+.form-group input, .form-group select, .form-group textarea {
+  padding: 7px 9px; font-size: .80rem; border: 1px solid var(--line); border-radius: 3px; outline: none;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  border-color: var(--zn-accent);
+}
+.btn-submit {
+  background: var(--zn-accent); color: #fff; font-weight: 800; font-size: .79rem;
+  padding: 8px 18px; border-radius: 3px; border: none; cursor: pointer; transition: background .15s;
+}
+.btn-submit:hover { background: #005FA3; }
+
+/* Timeline */
+.timeline { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.timeline-item {
+  background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--zn-accent);
+  padding: 9px 12px; border-radius: 3px;
+}
+.timeline-item .t-header {
+  display: flex; justify-content: space-between; font-size: .73rem; color: var(--muted); font-weight: 700;
+}
+.timeline-item .t-content {
+  font-size: .81rem; color: var(--ink); margin-top: 3px; font-weight: 600;
+}
+</style>
+</head>
+<body>
+
+<!-- ==========================================================================
+     TOPBAR NAVIGATION
+     ========================================================================== -->
+<header class="topbar">
+  <a class="brand" onclick="switchView('home')">
+    <div class="mk">☀️</div>
+    <div class="tx">
+      維運管理智慧營運平台
+      <small>MOW 2.0 待執行工單 ✕ 全案場決策中心</small>
+    </div>
+  </a>
+
+  <nav class="topnav">
+    <a id="nav-home" class="active" onclick="switchView('home')">📊 營運總盤</a>
+    <a id="nav-worklist" onclick="switchView('worklist')">📋 待執行工單 (Work_List)</a>
+    <a id="nav-master" onclick="switchView('master')">📑 全案場整合大庫</a>
+    <a id="nav-routine" onclick="switchView('routine')">⚙️ 合約例行派工</a>
+    <a id="nav-contacts" onclick="switchView('contacts')">👥 連絡人與設備</a>
+    <a id="nav-reporting" onclick="switchView('reporting')">📝 四方協同回報</a>
+  </nav>
+
+  <div class="topbar-actions">
+    <!-- Supabase 連線狀態鈕 -->
+    <div id="supabaseStatusBtn" class="btn-supabase" onclick="openSupabaseModal()" title="設定 Supabase 雲端資料庫連線">
+      <span class="dot"></span>
+      <span id="supabaseStatusText">Supabase: 離線</span>
+    </div>
+
+    <!-- 角色切換器 -->
+    <select id="roleSelector" class="role-select" onchange="onRoleChange(this.value)" title="切換協同角色">
+      <option value="all">🌐 全視角 (協同中心)</option>
+      <option value="manager">👔 主管視角 (決策大盤)</option>
+      <option value="sales">💼 業務視角 (客戶與合約)</option>
+      <option value="engineer">🛠️ 工程師視角 (派工巡檢)</option>
+      <option value="client">🏢 客戶視角 (案場與報告)</option>
+    </select>
+
+    <!-- 主題切換器 -->
+    <select id="themeSelector" class="theme-select" onchange="onThemeChange(this.value)" title="顧問品牌視覺風格">
+      <option value="hybrid">McKinsey (深海藍)</option>
+      <option value="bcg">BCG (波士頓綠)</option>
+      <option value="accenture">Accenture (科技紫)</option>
+    </select>
+
+    <button class="btn-action" onclick="exportDataExcel()">
+      📥 下載 Excel
+    </button>
+  </div>
+</header>
+
+<!-- ==========================================================================
+     VIEW 1: HOME / 營運總覽大盤
+     ========================================================================== -->
+<div id="view-home" class="view active">
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="eyebrow">MOW OPERATIONS & MAINTENANCE EXECUTIVE COCKPIT</div>
+        <h1>【全國 514 座光電案場營運大盤】總管理容量 789.2 MW，全維度整合派工工單、例行履約與作業紀錄</h1>
+        <div class="sub">
+          整併業務客戶、運維合約、現場工程與設備電號四大維度數據，提供業務、客戶、主管與工程師四方「單一真理來源 (Single Source of Truth)」。
+        </div>
+      </div>
+      <div class="flags">
+        <div class="flag primary">514 案場總數</div>
+        <div class="flag amber">789.18 MW</div>
+        <div class="flag coral" id="flag-pending">461 待執行工單</div>
+        <div class="flag green">652 歷年合約</div>
+      </div>
+    </div>
+
+    <!-- Bento Metric Cards -->
+    <div class="metric-grid">
+      <div class="metric accent">
+        <div class="label">總運維管理容量</div>
+        <div class="k" id="metric-cap">789.18 <span style="font-size:.9rem">MW</span></div>
+        <div class="t">共 514 座各類型太陽能電廠</div>
+      </div>
+      <div class="metric green">
+        <div class="label">履約中維運合約</div>
+        <div class="k" id="metric-contracts">177 <span style="font-size:.9rem">案場</span></div>
+        <div class="t">歷年累計納管 652 份有效合約</div>
+      </div>
+      <div class="metric coral">
+        <div class="label">待執行派工工作 (Work_List)</div>
+        <div class="k" id="metric-tasks">461 <span style="font-size:.9rem">筆</span></div>
+        <div class="t">待執行 365 筆 ｜ 已安排 96 筆</div>
+      </div>
+      <div class="metric amber">
+        <div class="label">例行履約達成追蹤 (R1)</div>
+        <div class="k" id="metric-routine">182 <span style="font-size:.9rem">案場</span></div>
+        <div class="t">巡檢、清洗、高壓、除草四大工項</div>
+      </div>
+    </div>
+
+    <!-- 策略核心摘要 -->
+    <div class="big-callout">
+      <div class="label">EXECUTIVE STRATEGIC SUMMARY 營運核心洞察</div>
+      <div class="answer" id="role-summary-title">
+        全台案場 514 座全面納管，三大重點：聚焦 461 筆例行派工排程、南區 211 案場高密集巡檢、以及 177 份合約的年度履約達成率。
+      </div>
+      <div class="more" id="role-summary-desc">
+        點擊上方「待執行工單 (Work_List)」可即時指派工程師、填寫作業紀錄表與產出維運報告；後端無縫串接 Supabase BaaS。
+      </div>
+    </div>
+
+    <!-- 分區與狀態統計圖卡 -->
+    <div class="two-col">
+      <div class="card">
+        <h3>📍 三大維運分區容量與案場配置</h3>
+        <p>A區 (北區維運 108 案場)、B區 (中區維運 195 案場)、C區 (南區維運 211 案場)。</p>
+        <div style="margin-top:12px; display:flex; flex-direction:column; gap:8px;">
+          <div>
+            <div style="display:flex; justify-content:space-between; font-size:.78rem; font-weight:700;">
+              <span>C_南區維運 (211 案場 / 41%)</span>
+              <span id="zone-south-cap">約 340.5 MW</span>
+            </div>
+            <div style="height:8px; background:#E2E8F0; border-radius:4px; overflow:hidden; margin-top:3px;">
+              <div style="width:41%; height:100%; background:var(--zn-accent);"></div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex; justify-content:space-between; font-size:.78rem; font-weight:700;">
+              <span>B_中區維運 (195 案場 / 38%)</span>
+              <span id="zone-central-cap">約 298.2 MW</span>
+            </div>
+            <div style="height:8px; background:#E2E8F0; border-radius:4px; overflow:hidden; margin-top:3px;">
+              <div style="width:38%; height:100%; background:#10B981;"></div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex; justify-content:space-between; font-size:.78rem; font-weight:700;">
+              <span>A_北區維運 (108 案場 / 21%)</span>
+              <span id="zone-north-cap">約 150.5 MW</span>
+            </div>
+            <div style="height:8px; background:#E2E8F0; border-radius:4px; overflow:hidden; margin-top:3px;">
+              <div style="width:21%; height:100%; background:#F59E0B;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card amber">
+        <h3>⚡ 461 筆待執行派工工作類別分析</h3>
+        <p>現正進行中與預計排程工單，以 90 天季檢與 180 天半年檢為最大宗：</p>
+        <div style="margin-top:12px; display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; text-align:center;">
+          <div style="background:#FEF3C7; padding:10px; border-radius:3px;">
+            <div style="font-size:1.3rem; font-weight:900; color:#B45309;" id="summary-insp-count">310</div>
+            <div style="font-size:.74rem; font-weight:700; color:#78350F;">定期巡檢單</div>
+          </div>
+          <div style="background:#E0F2FE; padding:10px; border-radius:3px;">
+            <div style="font-size:1.3rem; font-weight:900; color:#0369A1;" id="summary-clean-count">85</div>
+            <div style="font-size:.74rem; font-weight:700; color:#0C4A6E;">模組清洗單</div>
+          </div>
+          <div style="background:#F1F5F9; padding:10px; border-radius:3px;">
+            <div style="font-size:1.3rem; font-weight:900; color:#334155;" id="summary-other-count">66</div>
+            <div style="font-size:.74rem; font-weight:700; color:#1E293B;">其他叫修保養</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     VIEW 2: WORK LIST / 待執行工單中心 (逆向重製 ACME MOW Work_List)
+     ========================================================================== -->
+<div id="view-worklist" class="view">
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="eyebrow">FIELD WORK ORDER DISPATCH CENTER ・ REVERSE-ENGINEERED</div>
+        <h1>待執行工作清單 (Work_List)：461 筆派工隊列與現場作業閉環</h1>
+        <div class="sub">
+          對齊原站 <code style="font-size:.75rem; background:rgba(0,0,0,.06); padding:1px 4px; border-radius:2px;">https://ds.acmepointes.net/acme_mow/Work_List</code>，支援【➕派工】、【✏️派工詳情】、【📝作業紀錄表】、【📄維運報告】與【✅一鍵完工結案】。
+        </div>
+      </div>
+      <div class="flags">
+        <button class="btn-action" onclick="openNewDispatchModal()" style="font-size:.78rem; padding:6px 14px; background:var(--zn-accent); border-color:#0284C7;">
+          ➕ 新增派工
+        </button>
+        <div class="flag coral" id="wl-pending-flag">待執行 365</div>
+        <div class="flag amber" id="wl-scheduled-flag">已安排 96</div>
+        <div class="flag green" id="wl-completed-flag">已完成 0</div>
+      </div>
+    </div>
+
+    <!-- 篩選列 -->
+    <div class="filter-bar">
+      <input type="text" id="workSearch" placeholder="🔍 搜尋案場名稱、工程師帳號..." oninput="filterWorkTable()">
+      
+      <select id="workFilterEngineer" onchange="filterWorkTable()">
+        <option value="">全部負責工程師</option>
+        <option value="leoli">李孟家 (leoli)</option>
+        <option value="bryantchen">陳秉浤 (bryantchen)</option>
+        <option value="andrewlu">呂理淦 (andrewlu)</option>
+        <option value="kenli">李昀璁 (kenli)</option>
+        <option value="kaihong">洪稜凱 (kaihong)</option>
+        <option value="ichenghu">胡益誠 (ichenghu)</option>
+        <option value="yujiechang">張宇捷 (yujiechang)</option>
+        <option value="jingkuolo">羅健國 (jingkuolo)</option>
+        <option value="whitechiang">姜興中 (whitechiang)</option>
+        <option value="markwang">王永晴 (markwang)</option>
+        <option value="jackguo">郭明宗 (jackguo)</option>
+        <option value="farlin">汪順發 (farlin)</option>
+        <option value="roylee">李耿任 (roylee)</option>
+        <option value="yuhuang">黃昱超 (yuhuang)</option>
+        <option value="ivychung">鍾依靜 (ivychung)</option>
+        <option value="minahuang">黃鈺祺 (minahuang)</option>
+      </select>
+
+      <select id="workFilterType" onchange="filterWorkTable()">
+        <option value="">全部工作類別</option>
+        <option value="巡檢">巡檢</option>
+        <option value="清洗">清洗</option>
+        <option value="高壓">高壓</option>
+        <option value="除草">除草</option>
+        <option value="其他">其他</option>
+      </select>
+
+      <select id="workFilterStatus" onchange="filterWorkTable()">
+        <option value="">全部狀態</option>
+        <option value="待執行">待執行</option>
+        <option value="已安排">已安排</option>
+        <option value="已完成">已完成</option>
+      </select>
+
+      <label style="display:flex; align-items:center; gap:4px; font-size:.76rem; font-weight:700; color:var(--ink-secondary); cursor:pointer;">
+        <input type="checkbox" id="workShowCompleted" onchange="filterWorkTable()"> 顯示已完成
+      </label>
+
+      <select id="workPageSizeSelect" onchange="onWorkPageSizeChange(this.value)" style="max-width:90px;">
+        <option value="20">20 筆/頁</option>
+        <option value="50">50 筆/頁</option>
+        <option value="100">100 筆/頁</option>
+        <option value="9999">全部顯示</option>
+      </select>
+
+      <button class="btn-clear" onclick="clearWorkFilters()">重設</button>
+      <div class="record-count" id="workCountText">共 461 筆</div>
+    </div>
+
+    <!-- 工單大表 (Work Table) -->
+    <div class="table-wrap">
+      <table id="workTable">
+        <thead>
+          <tr>
+            <th style="width:45px;">項目</th>
+            <th>案場名稱</th>
+            <th>負責工程師</th>
+            <th>工作類別</th>
+            <th>D-day 起始日</th>
+            <th>週期 (天)</th>
+            <th>應執行日 (D-day)</th>
+            <th>狀態</th>
+            <th style="text-align:center; width:45px;">燈號</th>
+            <th style="text-align:center; width:35px;" title="派工設定 / 編輯">派工</th>
+            <th style="text-align:center; width:35px;" title="現場作業紀錄表">紀錄</th>
+            <th style="text-align:center; width:35px;" title="維運報告產出">報告</th>
+            <th style="text-align:center; width:35px;" title="一鍵完工結案">完工</th>
+          </tr>
+        </thead>
+        <tbody id="workTableBody">
+          <!-- 動態載入工單清單 -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 分頁 -->
+    <div class="pagination">
+      <div id="workPageInfo">第 1 頁</div>
+      <div class="page-btns" id="workPagination"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     VIEW 3: MASTER SHEET / 全案場整合大庫 (514 SITES)
+     ========================================================================== -->
+<div id="view-master" class="view">
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="eyebrow">UNIFIED MASTER DATABASE ・ ALL SHEETS ALIGNED</div>
+        <h1>全案場一覽整合大庫：514 案場全維度資料橫向對齊</h1>
+        <div class="sub">
+          對齊融合「案場規格」、「維運合約」、「例行排程 (R1)」、「待執行工單 (Work)」、「連絡人」與「設備電號」，支援四方角色一站式多條件檢索。
+        </div>
+      </div>
+      <div class="flags">
+        <div class="flag primary">514 案場總覽</div>
+        <div class="flag green">55 欄全維度整合</div>
+      </div>
+    </div>
+
+    <!-- 篩選列 -->
+    <div class="filter-bar">
+      <input type="text" id="masterSearch" placeholder="🔍 輸入關鍵字搜尋 (案場編號、名稱、客戶、負責人、地址、電號...)" oninput="filterMasterTable()">
+      
+      <select id="masterFilterZone" onchange="filterMasterTable()">
+        <option value="">全部維運分區</option>
+        <option value="A_北區維運">A_北區維運</option>
+        <option value="B_中區維運">B_中區維運</option>
+        <option value="C_南區維運">C_南區維運</option>
+      </select>
+
+      <select id="masterFilterContract" onchange="filterMasterTable()">
+        <option value="">全部合約狀態</option>
+        <option value="有">有效合約：有</option>
+        <option value="無">有效合約：無</option>
+      </select>
+
+      <select id="masterFilterHV" onchange="filterMasterTable()">
+        <option value="">高壓案場：全部</option>
+        <option value="是">高壓：是</option>
+        <option value="否">高壓：否</option>
+      </select>
+
+      <select id="masterFilterStatus" onchange="filterMasterTable()">
+        <option value="">健康度狀態：全部</option>
+        <option value="正常">正常</option>
+        <option value="待執行派工">待執行派工</option>
+        <option value="逾期警示">逾期警示</option>
+      </select>
+
+      <button class="btn-clear" onclick="clearMasterFilters()">重設篩選</button>
+      <div class="record-count" id="masterCountText">顯示 514 筆</div>
+    </div>
+
+    <!-- 整合大表 -->
+    <div class="table-wrap">
+      <table id="masterTable">
+        <thead>
+          <tr>
+            <th>案場編號</th>
+            <th>案場名稱</th>
+            <th>狀態標定</th>
+            <th>容量 (kW)</th>
+            <th>維運分區</th>
+            <th>負責工程師</th>
+            <th>負責管理師</th>
+            <th>客戶名稱</th>
+            <th>有效合約</th>
+            <th>巡檢達成率</th>
+            <th>待執行派工</th>
+            <th>案場地址</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="masterTableBody">
+          <!-- 動態載入 -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 分頁 -->
+    <div class="pagination">
+      <div id="masterPageInfo">第 1 / 21 頁 (每頁 25 筆)</div>
+      <div class="page-btns" id="masterPagination"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     VIEW 4: ROUTINE DISPATCH / 合約例行派工履約 (182 SITES)
+     ========================================================================== -->
+<div id="view-routine" class="view">
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="eyebrow">CONTRACT ROUTINE DISPATCH & FULFILLMENT</div>
+        <h1>合約例行性派工總覽：巡檢、清洗、高壓與除草年度履約進度</h1>
+        <div class="sub">
+          依據合約規範四大例行工項，量化年度約定次數、已執行次數與達成率指標，保障客戶合約權益與發電品質。
+        </div>
+      </div>
+      <div class="flags">
+        <div class="flag primary">182 履約案場</div>
+        <div class="flag amber">4 大例行工項</div>
+      </div>
+    </div>
+
+    <!-- 篩選列 -->
+    <div class="filter-bar">
+      <input type="text" id="routineSearch" placeholder="🔍 搜尋案場編號、名稱、工程師..." oninput="filterRoutineTable()">
+      <select id="routineFilterZone" onchange="filterRoutineTable()">
+        <option value="">全部維運分區</option>
+        <option value="A_北區維運">A_北區維運</option>
+        <option value="B_中區維運">B_中區維運</option>
+        <option value="C_南區維運">C_南區維運</option>
+      </select>
+      <div class="record-count" id="routineCountText">共 182 筆</div>
+    </div>
+
+    <!-- 例行派工表 -->
+    <div class="table-wrap">
+      <table id="routineTable">
+        <thead>
+          <tr>
+            <th>分區</th>
+            <th>案場編號</th>
+            <th>案場名稱</th>
+            <th>負責工程師</th>
+            <th>年限</th>
+            <th style="background:#0F2942;">巡檢週期</th>
+            <th style="background:#0F2942;">巡檢(約定/已執)</th>
+            <th style="background:#0F2942;">巡檢達成率</th>
+            <th style="background:#004F32;">清洗週期</th>
+            <th style="background:#004F32;">清洗(約定/已執)</th>
+            <th style="background:#312E81;">高壓週期</th>
+            <th style="background:#312E81;">高壓(約定/已執)</th>
+            <th style="background:#4B2E1E;">環境除草</th>
+            <th style="background:#4B2E1E;">除草(約定/已執)</th>
+          </tr>
+        </thead>
+        <tbody id="routineTableBody">
+          <!-- 動態載入 -->
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination">
+      <div id="routinePageInfo">第 1 頁</div>
+      <div class="page-btns" id="routinePagination"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     VIEW 5: CONTACTS & EQUIPMENT / 連絡人與設備庫
+     ========================================================================== -->
+<div id="view-contacts" class="view">
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="eyebrow">STAKEHOLDERS & HARDWARE REPOSITORY</div>
+        <h1>連絡人與設備庫：674 位維運窗口與 652 份歷年維運合約</h1>
+        <div class="sub">提供案場業主主要連絡管道、緊急電話、台電抄表電號、逆變器與箱變配件商明細。</div>
+      </div>
+      <div class="flags">
+        <div class="flag primary">674 連絡人</div>
+        <div class="flag green">652 歷年合約</div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <!-- 連絡人 -->
+      <div class="card">
+        <h3>👥 案場維運連絡人總庫 (674 筆)</h3>
+        <input type="text" id="contactSearch" placeholder="🔍 搜尋連絡人、電話、Email、案場..." oninput="filterContacts()" style="width:100%; padding:6px 10px; margin:8px 0; border:1px solid var(--line); border-radius:3px;">
+        <div class="table-wrap" style="max-height:500px; overflow-y:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>案場名稱</th>
+                <th>姓名</th>
+                <th>連絡電話</th>
+                <th>Email</th>
+              </tr>
+            </thead>
+            <tbody id="contactTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 合約清單 -->
+      <div class="card amber">
+        <h3>📜 歷年維運合約總庫 (652 筆)</h3>
+        <input type="text" id="contractSearch" placeholder="🔍 搜尋合約編號、案場、狀態..." oninput="filterContracts()" style="width:100%; padding:6px 10px; margin:8px 0; border:1px solid var(--line); border-radius:3px;">
+        <div class="table-wrap" style="max-height:500px; overflow-y:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>合約編號</th>
+                <th>案場名稱</th>
+                <th>類型</th>
+                <th>狀態</th>
+                <th>期間</th>
+              </tr>
+            </thead>
+            <tbody id="contractTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     VIEW 6: REPORTING / 四方協同回報中心
+     ========================================================================== -->
+<div id="view-reporting" class="view">
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="eyebrow">MULTI-ROLE COLLABORATIVE REPORTING CENTER</div>
+        <h1>四方協同回報中心：業務・客戶・主管・工程師共同回報與處理流</h1>
+        <div class="sub">
+          提供跨角色即時線上提交現場機況異常、派工需求確認、合約變更諮詢或客戶滿意度回饋。
+        </div>
+      </div>
+      <div class="flags">
+        <div class="flag primary">跨部門協同</div>
+        <div class="flag amber">即時反饋流</div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <!-- 回報表單 -->
+      <div class="card" style="padding:16px 20px;">
+        <h3 style="font-size:1.02rem; font-weight:800; color:var(--zn-primary); margin-bottom:12px;">
+          ✍️ 發起協同回報 / 異常通報
+        </h3>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label>回報人角色 *</label>
+            <select id="repRole">
+              <option value="工程師">🛠️ 工程師 (現場施工/巡檢回報)</option>
+              <option value="業務">💼 業務 (客戶需求/續約溝通)</option>
+              <option value="主管">👔 主管 (派工指示/重大覆核)</option>
+              <option value="客戶">🏢 客戶 (案場異常/諮詢反應)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>回報人姓名 *</label>
+            <input type="text" id="repName" placeholder="例如：李孟家 / 大衛 / 業主窗口">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>關聯案場名稱 *</label>
+            <input type="text" id="repField" list="siteDataList" placeholder="輸入或選擇案場名稱...">
+            <datalist id="siteDataList"></datalist>
+          </div>
+          <div class="form-group">
+            <label>事項類別 *</label>
+            <select id="repCategory">
+              <option value="定期巡檢結果回報">定期巡檢結果回報</option>
+              <option value="模組清洗/除草完成">模組清洗/除草完成</option>
+              <option value="機況異常叫修">機況異常叫修 (INV/高壓跳機)</option>
+              <option value="客戶服務需求/投訴">客戶服務需求/投訴</option>
+              <option value="合約到期續約諮詢">合約到期續約諮詢</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:14px;">
+          <label>詳細說明與回報內容 *</label>
+          <textarea id="repContent" rows="4" placeholder="請填寫具體狀況描述、零件型號、預估工期或需協助事項..."></textarea>
+        </div>
+
+        <button class="btn-submit" onclick="submitReport()">送出協同回報</button>
+      </div>
+
+      <!-- 回報歷史時間軸 -->
+      <div class="card">
+        <h3>📋 最新協同回報與處理動態 (<span id="timelineCount">0</span>)</h3>
+        <div id="timelineContainer" class="timeline" style="max-height:480px; overflow-y:auto;">
+          <!-- 動態載入歷史 -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     MODAL 1: 新增派工 (NEW DISPATCH MODAL - open_RW(4))
+     ========================================================================== -->
+<div id="dispatchModal" class="modal-overlay" onclick="closeModalOnOverlay(event, 'dispatchModal')">
+  <div class="modal-box large">
+    <div class="modal-header">
+      <h2 id="dispatchModalTitle">➕ 新增派工任務</h2>
+      <button class="close-btn" onclick="closeModal('dispatchModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row three">
+        <div class="form-group">
+          <label>*案場名稱</label>
+          <select id="dispSiteSelect" onchange="onDispatchSiteChange(this.value)">
+            <option value="">請選擇案場...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>*工作類別</label>
+          <select id="dispWorkType">
+            <option value="巡檢">巡檢</option>
+            <option value="清洗">清洗</option>
+            <option value="高壓">高壓</option>
+            <option value="除草">除草</option>
+            <option value="其他">其他</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>*工作執行日 (D-day)</label>
+          <input type="date" id="dispDueDate">
+        </div>
+      </div>
+
+      <div class="form-row three">
+        <div class="form-group">
+          <label>*費用歸屬</label>
+          <select id="dispExpense">
+            <option value="維運">維運</option>
+            <option value="保固">保固</option>
+            <option value="在製">在製</option>
+            <option value="個案">個案</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>*報告類型</label>
+          <select id="dispReportType">
+            <option value="進金生">進金生</option>
+            <option value="中租">中租</option>
+            <option value="雲豹">雲豹</option>
+            <option value="需要報告">需要報告</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>*派工來源</label>
+          <select id="dispSource" onchange="onDispatchSourceChange(this.value)">
+            <option value="合約">合約</option>
+            <option value="監控">監控</option>
+            <option value="客服">客服</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>派工分類</label>
+          <select id="dispCategory" onchange="onDispatchCategoryChange(this.value)">
+            <!-- 連動選項 -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label>派工項目</label>
+          <select id="dispItem">
+            <!-- 連動選項 -->
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>指派負責工程師 (可多選)</label>
+        <div style="display:flex; gap:8px;">
+          <select id="dispEngineerAddSelect" style="flex:1;">
+            <option value="leoli">維運部-維運一課 李孟家 (leoli)</option>
+            <option value="bryantchen">維運部-維運一課 陳秉浤 (bryantchen)</option>
+            <option value="andrewlu">維運部-維運二課 呂理淦 (andrewlu)</option>
+            <option value="kenli">維運部-維運二課 李昀璁 (kenli)</option>
+            <option value="kaihong">維運部-維運一課 洪稜凱 (kaihong)</option>
+            <option value="ichenghu">維運部-維運一課 胡益誠 (ichenghu)</option>
+            <option value="yujiechang">維運部-維運二課 張宇捷 (yujiechang)</option>
+            <option value="jingkuolo">維運部-維運二課 羅健國 (jingkuolo)</option>
+            <option value="whitechiang">維運部-維運一課 姜興中 (whitechiang)</option>
+            <option value="markwang">維運部-維運一課 王永晴 (markwang)</option>
+            <option value="jackguo">維運部-維運一課 郭明宗 (jackguo)</option>
+            <option value="farlin">維運部-維運二課 汪順發 (farlin)</option>
+            <option value="roylee">維運部-維運三課 李耿任 (roylee)</option>
+            <option value="yuhuang">維運部-維運三課 黃昱超 (yuhuang)</option>
+            <option value="ivychung">維運處-業務管理部 鍾依靜 (ivychung)</option>
+            <option value="minahuang">維運處-業務管理部 黃鈺祺 (minahuang)</option>
+          </select>
+          <button type="button" class="btn-clear" onclick="addEngineerToDispatch()">➕ 加入名冊</button>
+        </div>
+        <div id="dispSelectedEngineersList" style="margin-top:6px; display:flex; flex-wrap:wrap; gap:5px;"></div>
+      </div>
+
+      <div class="form-group">
+        <label>備註事項</label>
+        <textarea id="dispNotes" rows="3" placeholder="請填寫現場注意事項、出工前確認事項..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-clear" onclick="closeModal('dispatchModal')">取消</button>
+      <button class="btn-submit" onclick="saveNewDispatch()">確定派工</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     MODAL 2: 作業紀錄表 (WORK RECORD MODAL - open_RW(2))
+     ========================================================================== -->
+<div id="recordModal" class="modal-overlay" onclick="closeModalOnOverlay(event, 'recordModal')">
+  <div class="modal-box large">
+    <div class="modal-header">
+      <h2 id="recordModalTitle">📝 現場作業紀錄表</h2>
+      <button class="close-btn" onclick="closeModal('recordModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--zn-accent-soft); padding:8px 12px; border-radius:3px; margin-bottom:12px; font-weight:700;" id="recordSiteInfo">
+        案場資訊載入中...
+      </div>
+
+      <h4 style="font-size:.86rem; font-weight:800; color:var(--zn-primary); margin:8px 0 6px;">一、派工查檢 / 現場作業進度</h4>
+      <div class="form-row three">
+        <div class="form-group">
+          <label>*現場執行開始時間</label>
+          <input type="datetime-local" id="recStartTime">
+        </div>
+        <div class="form-group">
+          <label>*現場執行結束時間</label>
+          <input type="datetime-local" id="recEndTime">
+        </div>
+        <div class="form-group">
+          <label>109表 KWh (輸入值抄表)</label>
+          <input type="number" id="recMeterKwh" placeholder="例如: 125840.5">
+        </div>
+      </div>
+
+      <div class="form-row three">
+        <div class="form-group">
+          <label>異常系統</label>
+          <select id="recFaultSystem">
+            <option value="">無異常 / 正常</option>
+            <option value="監控系統">監控系統</option>
+            <option value="電力系統">電力系統 (INV/盤體)</option>
+            <option value="機構土建">機構土建 (支架/基樁)</option>
+            <option value="其它">其它</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>異常段</label>
+          <input type="text" id="recFaultSection" placeholder="例如: INV-03 組串 4">
+        </div>
+        <div class="form-group">
+          <label>異常處</label>
+          <input type="text" id="recFaultLocation" placeholder="例如: 直流接頭熔毀">
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>*作為及現場進度說明</label>
+        <textarea id="recActionProgress" rows="3" placeholder="請詳述現場查檢過程、測量數值、排除步驟與結論..."></textarea>
+      </div>
+
+      <h4 style="font-size:.86rem; font-weight:800; color:var(--zn-primary); margin:10px 0 6px;">二、料件更換庫 (74 項專業維運備件)</h4>
+      <div style="display:flex; gap:8px; margin-bottom:8px;">
+        <select id="recPartSelect" style="flex:2;">
+          <option value="">請選擇更換備品料件...</option>
+          <option value="DC直流開關-Santon">DC直流開關-Santon</option>
+          <option value="JSTAR保險絲-1000V_15A">JSTAR保險絲-1000V_15A</option>
+          <option value="JSTAR保險絲-1000V_16A">JSTAR保險絲-1000V_16A</option>
+          <option value="防水接頭_MC4.PV-KBT/KST 4/6II-UR">防水接頭_MC4.PV-KBT/KST 4/6II-UR</option>
+          <option value="SolarEdge_優化器P1100">SolarEdge_優化器P1100</option>
+          <option value="4G_LTE 無線路由器">4G_LTE 無線路由器</option>
+          <option value="資料收集器 AIG-101-T">資料收集器 AIG-101-T</option>
+          <option value="日照計LP PYRA 03">日照計LP PYRA 03</option>
+          <option value="TEMP SENSOR_SP1_貼片式PT100感測器">TEMP SENSOR_SP1_貼片式PT100感測器</option>
+          <option value="Delta專用戶外型風扇">Delta專用戶外型風扇</option>
+          <option value="滑軌式突波吸收器">滑軌式突波吸收器</option>
+          <option value="NFB-士林電機">NFB-士林電機</option>
+          <option value="NFB-東元">NFB-東元</option>
+          <option value="DELTA_INVERTER_M30A_230_30KW">DELTA_INVERTER_M30A_230_30KW</option>
+        </select>
+        <input type="number" id="recPartQty" value="1" min="1" style="width:70px;" placeholder="數量">
+        <button type="button" class="btn-clear" onclick="addPartToRecord()">➕ 加入料件</button>
+      </div>
+      <div id="recPartsTable" style="margin-bottom:12px;"></div>
+
+      <div style="background:var(--surface-muted); padding:10px 14px; border-radius:3px; display:flex; justify-content:space-between; align-items:center;">
+        <label style="display:flex; align-items:center; gap:6px; font-weight:800; color:var(--zn-primary); cursor:pointer;">
+          <input type="checkbox" id="recIsFinal"> ※ 此筆為最後一筆紀錄表（送簽核准後自動結案）
+        </label>
+        <div style="font-size:.76rem; color:var(--muted);">BPM 送簽狀態：<strong>暫存中</strong></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-clear" onclick="closeModal('recordModal')">取消</button>
+      <button class="btn-submit" onclick="saveRecordSheet()">儲存作業紀錄表</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     MODAL 3: 維運報告 (REPORT PREVIEW MODAL - open_RW(3))
+     ========================================================================== -->
+<div id="reportModal" class="modal-overlay" onclick="closeModalOnOverlay(event, 'reportModal')">
+  <div class="modal-box large">
+    <div class="modal-header">
+      <h2 id="reportModalTitle">📄 維運作業報告書</h2>
+      <button class="close-btn" onclick="closeModal('reportModal')">&times;</button>
+    </div>
+    <div class="modal-body" id="reportModalBody">
+      <!-- 動態載入報告內容 -->
+    </div>
+    <div class="modal-footer">
+      <button class="btn-clear" onclick="closeModal('reportModal')">關閉</button>
+      <button class="btn-submit" onclick="printReport()">🖨️ 列印 / 匯出 PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     MODAL 4: 案場深度抽屜 (SITE DETAIL MODAL)
+     ========================================================================== -->
+<div id="siteModal" class="modal-overlay" onclick="closeModalOnOverlay(event, 'siteModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 id="modalTitle">案場詳細資訊</h2>
+      <button class="close-btn" onclick="closeModal('siteModal')">&times;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     MODAL 5: SUPABASE CLOUD SYNC CONFIGURATION
+     ========================================================================== -->
+<div id="supabaseModal" class="modal-overlay" onclick="closeModalOnOverlay(event, 'supabaseModal')">
+  <div class="modal-box" style="max-width:580px;">
+    <div class="modal-header" style="background:#064E3B; border-color:#10B981;">
+      <h2>⚡ Supabase BaaS 雲端後端連線配置</h2>
+      <button class="close-btn" onclick="closeModal('supabaseModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.82rem; color:var(--ink-secondary); margin-bottom:12px;">
+        遵循 <strong>github-supabase-web</strong> 安全架構，純前端僅暴露公開 <code>anon public key</code>，密鑰保存在本地瀏覽器 <code>localStorage</code>，支援即時讀寫 PostgreSQL 與檔案上傳 Storage。
+      </p>
+
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>Supabase Project URL *</label>
+        <input type="text" id="cfgSbUrl" placeholder="https://your-project.supabase.co">
+      </div>
+
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Supabase Anon Key (Public Client Key) *</label>
+        <input type="password" id="cfgSbKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+      </div>
+
+      <div style="background:var(--surface-muted); padding:10px; border-radius:3px; font-size:.76rem; color:var(--ink-secondary); margin-bottom:12px;">
+        <div>📡 連線狀態：<strong id="sbConnectionStatusText">未連線 (離線使用本地數據)</strong></div>
+        <div style="margin-top:3px;">🛡️ 安全守則：嚴禁使用 <code>service_role key</code>！資料庫已啟用 RLS 行級安全規範。</div>
+      </div>
+
+      <div style="display:flex; gap:8px;">
+        <button class="btn-clear" onclick="testSupabaseConnection()" style="flex:1;">🔌 測試連線</button>
+        <button class="btn-submit" onclick="saveSupabaseConfig()" style="flex:1; background:#059669;">💾 儲存並啟用</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 引用外部資料集 -->
+<script src="om_platform_data.js"></script>
+
+<script>
+/* ==========================================================================
+   PLATFORM APPLICATION LOGIC & SUPABASE INTEGRATION
+   ========================================================================== */
+
+let supabaseClient = null;
+let isSupabaseConnected = false;
+
+// 資料存儲
+let masterRecords = [];
+let routineRecords = [];
+let workRecords = [];
+let contactRecords = [];
+let contractRecords = [];
+
+// 分頁控制
+let currentMasterPage = 1;
+const masterPageSize = 25;
+let filteredMaster = [];
+
+let currentRoutinePage = 1;
+const routinePageSize = 20;
+let filteredRoutine = [];
+
+let currentWorkPage = 1;
+let workPageSize = 20;
+let filteredWork = [];
+
+// 派工表單暫存
+let tempAssignedEngineers = [];
+let tempReplacedParts = [];
+let activeWorkOrder = null;
+
+// 頁面初始化
+window.addEventListener('DOMContentLoaded', () => {
+  initSupabaseClient();
+
+  if (window.OM_DATA) {
+    initData(window.OM_DATA);
+  } else {
+    fetch('om_platform_data.json')
+      .then(r => r.json())
+      .then(d => initData(d))
+      .catch(err => console.error('無法載入本地資料:', err));
+  }
+});
+
+// -------------------------------------------------------------
+// SUPABASE CLIENT SETUP & CLOUD SYNC
+// -------------------------------------------------------------
+function initSupabaseClient() {
+  const url = localStorage.getItem('SB_MOW_URL') || window.ENV_SUPABASE_URL || '';
+  const key = localStorage.getItem('SB_MOW_KEY') || window.ENV_SUPABASE_KEY || '';
+
+  if (url && key && window.supabase) {
+    try {
+      supabaseClient = window.supabase.createClient(url, key);
+      testSupabaseConnection(true);
+    } catch (e) {
+      console.warn('Supabase 初始化失敗:', e);
+    }
+  } else {
+    updateSupabaseStatusUI(false);
+  }
+}
+
+async function testSupabaseConnection(silent = false) {
+  const url = document.getElementById('cfgSbUrl')?.value.trim() || localStorage.getItem('SB_MOW_URL');
+  const key = document.getElementById('cfgSbKey')?.value.trim() || localStorage.getItem('SB_MOW_KEY');
+
+  if (!url || !key) {
+    if (!silent) alert('請填寫 Supabase URL 與 Anon Key！');
+    return;
+  }
+
+  try {
+    const client = window.supabase.createClient(url, key);
+    const { data, error } = await client.from('mow_work_orders').select('id').limit(1);
+
+    if (error && error.code !== 'PGRST116') {
+      console.warn('Supabase 連線測試:', error.message);
+      // 若表格尚未建立但連線成功
+      if (error.message.includes('relation') || error.message.includes('does not exist')) {
+        updateSupabaseStatusUI(true, '已連線 (資料庫表待建立)');
+        if (!silent) alert('連線成功！請至 Supabase SQL Editor 執行 supabase-schema.sql 腳本建立資料表。');
+        return;
+      }
+      throw error;
+    }
+
+    updateSupabaseStatusUI(true);
+    if (!silent) alert('🎉 Supabase 連線成功！已成功握手連線。');
+  } catch (err) {
+    updateSupabaseStatusUI(false);
+    if (!silent) alert('連線失敗: ' + (err.message || err));
+  }
+}
+
+function saveSupabaseConfig() {
+  const url = document.getElementById('cfgSbUrl').value.trim();
+  const key = document.getElementById('cfgSbKey').value.trim();
+
+  if (!url || !key) {
+    alert('請輸入完整 URL 與 Key！');
+    return;
+  }
+
+  localStorage.setItem('SB_MOW_URL', url);
+  localStorage.setItem('SB_MOW_KEY', key);
+  initSupabaseClient();
+  closeModal('supabaseModal');
+  alert('Supabase 設定已成功儲存！');
+}
+
+function updateSupabaseStatusUI(connected, customText = '') {
+  isSupabaseConnected = connected;
+  const btn = document.getElementById('supabaseStatusBtn');
+  const txt = document.getElementById('supabaseStatusText');
+  const statusTxt = document.getElementById('sbConnectionStatusText');
+
+  if (connected) {
+    btn.classList.add('connected');
+    txt.innerText = 'Supabase: 已連線';
+    if (statusTxt) statusTxt.innerHTML = `<span style="color:#059669;">🟢 ${customText || '已連線 (即時雲端同步中)'}</span>`;
+  } else {
+    btn.classList.remove('connected');
+    txt.innerText = 'Supabase: 離線';
+    if (statusTxt) statusTxt.innerHTML = `<span style="color:#64748B;">⚪ 離線模式 (本機儲存正常可用)</span>`;
+  }
+}
+
+function openSupabaseModal() {
+  const url = localStorage.getItem('SB_MOW_URL') || '';
+  const key = localStorage.getItem('SB_MOW_KEY') || '';
+  document.getElementById('cfgSbUrl').value = url;
+  document.getElementById('cfgSbKey').value = key;
+  openModal('supabaseModal');
+}
+
+// -------------------------------------------------------------
+// DATA INITIALIZATION
+// -------------------------------------------------------------
+function initData(data) {
+  masterRecords = data.unified_master || [];
+  routineRecords = data.routine_schedule_r1 || [];
+  workRecords = data.work_list || [];
+  contactRecords = data.contacts || [];
+  contractRecords = data.contracts || [];
+
+  // 合併本地新增的工單
+  const localAddedOrders = JSON.parse(localStorage.getItem('mow_custom_orders') || '[]');
+  if (localAddedOrders.length > 0) {
+    workRecords = [...localAddedOrders, ...workRecords];
+  }
+
+  // 檢查已完工的狀態覆寫
+  const completedIds = JSON.parse(localStorage.getItem('mow_completed_orders') || '[]');
+  workRecords.forEach(w => {
+    if (completedIds.includes(w.item_no) || completedIds.includes(w.aom_no)) {
+      w.status = '已完成';
+      w.light_color = 'green';
+    }
+  });
+
+  filteredMaster = [...masterRecords];
+  filteredRoutine = [...routineRecords];
+  filteredWork = [...workRecords];
+
+  // 填入 Datalist 與案場下拉
+  populateSiteOptions();
+
+  // 渲染頁面各視圖
+  renderWorkTable();
+  renderMasterTable();
+  renderRoutineTable();
+  renderContacts();
+  renderContracts();
+  renderTimeline();
+  updateWorkListSummaryCounters();
+}
+
+function populateSiteOptions() {
+  const dl = document.getElementById('siteDataList');
+  const sel = document.getElementById('dispSiteSelect');
+
+  if (dl) {
+    dl.innerHTML = masterRecords.slice(0, 400).map(m => `<option value="${m['案場名稱']}">${m['案場編號']} - ${m['案場名稱']}</option>`).join('');
+  }
+  if (sel) {
+    sel.innerHTML = '<option value="">請選擇案場...</option>' + masterRecords.map(m => `<option value="${m['案場名稱']}">${m['案場名稱']} (${m['案場編號']})</option>`).join('');
+  }
+}
+
+// -------------------------------------------------------------
+// VIEW NAVIGATION
+// -------------------------------------------------------------
+function switchView(viewId) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.topnav a').forEach(a => a.classList.remove('active'));
+
+  const targetView = document.getElementById('view-' + viewId);
+  const targetNav = document.getElementById('nav-' + viewId);
+  if (targetView) targetView.classList.add('active');
+  if (targetNav) targetNav.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function onRoleChange(role) {
+  const sumTitle = document.getElementById('role-summary-title');
+  const sumDesc = document.getElementById('role-summary-desc');
+
+  if (role === 'manager') {
+    sumTitle.innerHTML = '👔【主管決策大盤】總管理容量 789.2 MW，監控 461 筆例行派工排程與南/中/北三大分區維運負荷。';
+    sumDesc.innerHTML = '即時掌握合約覆蓋率（177案場有效）與履約進度，重點排查高壓保養與未如期巡檢之案場。';
+  } else if (role === 'sales') {
+    sumTitle.innerHTML = '💼【業務商機大盤】掌握 514 案場業主清單、歷年 652 份合約續約期程與自建/外來案場分佈。';
+    sumDesc.innerHTML = '快速檢索特定客戶全部電廠（如可口可樂、奇美、富強鑫、中租等），鎖定合約即將到期之續約商機。';
+  } else if (role === 'engineer') {
+    sumTitle.innerHTML = '🛠️【工程師工作大盤】全台 461 筆待執/已安排派工任務，聚焦責任分區與 D-day 應執行日倒數。';
+    sumDesc.innerHTML = '可直接篩選個人名下案場，追蹤 90天季檢、180天半年檢及災前災後巡檢執行回報。';
+  } else if (role === 'client') {
+    sumTitle.innerHTML = '🏢【客戶服務專區】查詢貴公司案場即時規格、專屬維運責任工程師與客服管理師聯絡窗口。';
+    sumDesc.innerHTML = '透明查閱年度定期巡檢次數與清洗達成進度，並可於線上直接發起服務回報。';
+  } else {
+    sumTitle.innerHTML = '🌐【四方協同大盤】514 座案場全維度資料橫向對齊，融合業務、客戶、主管與工程師共通數據資產。';
+    sumDesc.innerHTML = '整合合約履約、例行巡檢、清洗、高壓與工程派工，建構單一真理來源。';
+  }
+}
+
+function onThemeChange(theme) {
+  document.documentElement.setAttribute('data-consulting-theme', theme);
+}
+
+// -------------------------------------------------------------
+// WORK LIST TABLE RENDERING & ACTIONS (ACME MOW WORK_LIST)
+// -------------------------------------------------------------
+function filterWorkTable() {
+  const kw = (document.getElementById('workSearch').value || '').trim().toLowerCase();
+  const eng = document.getElementById('workFilterEngineer').value;
+  const type = document.getElementById('workFilterType').value;
+  const status = document.getElementById('workFilterStatus').value;
+  const showCompleted = document.getElementById('workShowCompleted').checked;
+
+  filteredWork = workRecords.filter(item => {
+    if (!showCompleted && item.status === '已完成') return false;
+    if (eng && item.engineer !== eng) return false;
+    if (type && item.work_type !== type) return false;
+    if (status && item.status !== status) return false;
+    if (kw) {
+      const match = (item.field_name || '').toLowerCase().includes(kw) ||
+                    (item.engineer || '').toLowerCase().includes(kw) ||
+                    (item.work_type || '').toLowerCase().includes(kw);
+      if (!match) return false;
+    }
+    return true;
+  });
+
+  currentWorkPage = 1;
+  renderWorkTable();
+}
+
+function clearWorkFilters() {
+  document.getElementById('workSearch').value = '';
+  document.getElementById('workFilterEngineer').value = '';
+  document.getElementById('workFilterType').value = '';
+  document.getElementById('workFilterStatus').value = '';
+  document.getElementById('workShowCompleted').checked = false;
+  filterWorkTable();
+}
+
+function onWorkPageSizeChange(val) {
+  workPageSize = parseInt(val, 10);
+  currentWorkPage = 1;
+  renderWorkTable();
+}
+
+function renderWorkTable() {
+  const tbody = document.getElementById('workTableBody');
+  const total = filteredWork.length;
+  document.getElementById('workCountText').innerText = `共 ${total} 筆 (總計 ${workRecords.length} 筆)`;
+
+  const start = (currentWorkPage - 1) * workPageSize;
+  const end = Math.min(start + workPageSize, total);
+  const pageItems = filteredWork.slice(start, end);
+
+  tbody.innerHTML = pageItems.map(item => {
+    // 燈號判定
+    let lightClass = 'traffic-dot red';
+    if (item.status === '已完成') lightClass = 'traffic-dot green';
+    else if (item.status === '已安排') lightClass = 'traffic-dot yellow';
+
+    // 狀態標籤
+    let statusBadge = `<span class="badge ${item.status === '已完成' ? 'green' : item.status === '已安排' ? 'blue' : 'red'}">${item.status}</span>`;
+
+    // 動作按鈕狀態 (已安排才能填紀錄與報告)
+    const isScheduled = item.status === '已安排' || item.status === '已完成';
+    const isCompleted = item.status === '已完成';
+
+    return `
+      <tr>
+        <td style="font-family:'JetBrains Mono',monospace; font-weight:700;">${item.item_no || '-'}</td>
+        <td style="font-weight:700; color:var(--zn-primary);">${item.field_name}</td>
+        <td style="font-family:'JetBrains Mono',monospace; font-size:.76rem;">${item.engineer || '-'}</td>
+        <td><span class="badge ${item.work_type === '巡檢' ? 'blue' : item.work_type === '清洗' ? 'amber' : 'gray'}">${item.work_type}</span></td>
+        <td style="font-family:'JetBrains Mono',monospace; font-size:.74rem;">${item.start_date || '-'}</td>
+        <td style="font-family:'JetBrains Mono',monospace; font-size:.74rem;">${item.period_days ? item.period_days + '天' : '-'}</td>
+        <td style="font-family:'JetBrains Mono',monospace; font-size:.74rem; font-weight:700;">${item.due_date || '-'}</td>
+        <td>${statusBadge}</td>
+        <td style="text-align:center;"><span class="${lightClass}" title="${item.status}"></span></td>
+        <td style="text-align:center;">
+          <button class="btn-icon" onclick="openDispatchDetailModal('${item.item_no}')" title="派工設定 / 編輯">
+            ✏️
+          </button>
+        </td>
+        <td style="text-align:center;">
+          <button class="btn-icon ${isScheduled ? '' : 'disabled'}" onclick="openRecordSheetModal('${item.item_no}')" title="現場作業紀錄表">
+            📝
+          </button>
+        </td>
+        <td style="text-align:center;">
+          <button class="btn-icon ${isScheduled ? '' : 'disabled'}" onclick="openReportModal('${item.item_no}')" title="維運作業報告書">
+            📄
+          </button>
+        </td>
+        <td style="text-align:center;">
+          <button class="btn-icon complete ${isCompleted ? 'disabled' : ''}" onclick="completeWorkOrder('${item.item_no}')" title="${isCompleted ? '已完工' : '標記完工結案'}">
+            ${isCompleted ? '✔️' : '✅'}
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  renderWorkPagination(total);
+}
+
+function renderWorkPagination(total) {
+  const totalPages = Math.ceil(total / workPageSize) || 1;
+  document.getElementById('workPageInfo').innerText = `第 ${currentWorkPage} / ${totalPages} 頁 (每頁 ${workPageSize === 9999 ? '全部' : workPageSize} 筆)`;
+
+  const container = document.getElementById('workPagination');
+  let btns = '';
+
+  btns += `<button class="page-btn" ${currentWorkPage === 1 ? 'disabled' : ''} onclick="changeWorkPage(${currentWorkPage - 1})">上一頁</button>`;
+  
+  const startP = Math.max(1, currentWorkPage - 2);
+  const endP = Math.min(totalPages, currentWorkPage + 2);
+  for (let i = startP; i <= endP; i++) {
+    btns += `<button class="page-btn ${i === currentWorkPage ? 'active' : ''}" onclick="changeWorkPage(${i})">${i}</button>`;
+  }
+
+  btns += `<button class="page-btn" ${currentWorkPage === totalPages ? 'disabled' : ''} onclick="changeWorkPage(${currentWorkPage + 1})">下一頁</button>`;
+  container.innerHTML = btns;
+}
+
+function changeWorkPage(page) {
+  currentWorkPage = page;
+  renderWorkTable();
+  window.scrollTo({ top: 120, behavior: 'smooth' });
+}
+
+function updateWorkListSummaryCounters() {
+  const pending = workRecords.filter(w => w.status === '待執行').length;
+  const scheduled = workRecords.filter(w => w.status === '已安排').length;
+  const completed = workRecords.filter(w => w.status === '已完成').length;
+
+  document.getElementById('wl-pending-flag').innerText = `待執行 ${pending}`;
+  document.getElementById('wl-scheduled-flag').innerText = `已安排 ${scheduled}`;
+  document.getElementById('wl-completed-flag').innerText = `已完成 ${completed}`;
+  document.getElementById('flag-pending').innerText = `${pending} 待執行工單`;
+  document.getElementById('metric-tasks').innerHTML = `${pending + scheduled} <span style="font-size:.9rem">筆</span>`;
+}
+
+// -------------------------------------------------------------
+// DISPATCH MODALS & ACTIONS (open_RW(1) & open_RW(4))
+// -------------------------------------------------------------
+function openNewDispatchModal() {
+  document.getElementById('dispatchModalTitle').innerText = '➕ 新增派工任務 (原 index_work_F)';
+  document.getElementById('dispSiteSelect').value = '';
+  document.getElementById('dispWorkType').value = '巡檢';
+  document.getElementById('dispDueDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('dispExpense').value = '維運';
+  document.getElementById('dispReportType').value = '進金生';
+  document.getElementById('dispSource').value = '合約';
+  onDispatchSourceChange('合約');
+  
+  tempAssignedEngineers = ['leoli'];
+  renderAssignedEngineersUI();
+  document.getElementById('dispNotes').value = '';
+  activeWorkOrder = null;
+  openModal('dispatchModal');
+}
+
+function openDispatchDetailModal(itemNo) {
+  const order = workRecords.find(w => String(w.item_no) === String(itemNo));
+  if (!order) return;
+  activeWorkOrder = order;
+
+  document.getElementById('dispatchModalTitle').innerText = `✏️ 派工詳情與編輯：【${order.field_name}】(${order.work_type})`;
+  document.getElementById('dispSiteSelect').value = order.field_name;
+  document.getElementById('dispWorkType').value = order.work_type;
+  document.getElementById('dispDueDate').value = order.due_date || '';
+  document.getElementById('dispExpense').value = order.expense_attribution || '維運';
+  document.getElementById('dispReportType').value = order.report_type || '進金生';
+  document.getElementById('dispSource').value = order.dispatch_source || '合約';
+  onDispatchSourceChange(document.getElementById('dispSource').value);
+
+  tempAssignedEngineers = order.engineer ? [order.engineer] : ['leoli'];
+  renderAssignedEngineersUI();
+  document.getElementById('dispNotes').value = order.notes || '';
+  openModal('dispatchModal');
+}
+
+function onDispatchSourceChange(source) {
+  const catSel = document.getElementById('dispCategory');
+  if (source === '合約') {
+    catSel.innerHTML = `
+      <option value="M 案場巡檢">M 案場巡檢</option>
+      <option value="L 委外作業">L 委外作業 (清洗/除草/高壓)</option>
+      <option value="K 軟/硬體作業">K 軟/硬體作業</option>
+      <option value="N 報告作業">N 報告作業</option>
+    `;
+  } else if (source === '監控') {
+    catSel.innerHTML = `
+      <option value="A 機況查檢處理(合約內)">A 機況查檢處理(合約內)</option>
+      <option value="B 資料處理(合約內)">B 資料處理(合約內)</option>
+    `;
+  } else {
+    catSel.innerHTML = `
+      <option value="U 客戶通知(合約內)">U 客戶通知(合約內)</option>
+      <option value="V 客戶服務(合約外)">V 客戶服務(合約外)</option>
+    `;
+  }
+  onDispatchCategoryChange(catSel.value);
+}
+
+function onDispatchCategoryChange(cat) {
+  const itemSel = document.getElementById('dispItem');
+  if (cat.includes('巡檢')) {
+    itemSel.innerHTML = `
+      <option value="M_01 例行巡檢執行">M_01 例行巡檢執行</option>
+      <option value="M_02 風災前巡檢執行">M_02 風災前巡檢執行</option>
+      <option value="M_03 風災後巡檢執行">M_03 風災後巡檢執行</option>
+    `;
+  } else if (cat.includes('委外')) {
+    itemSel.innerHTML = `
+      <option value="L_02 模組清洗(監工及作業處理)">L_02 模組清洗(監工及作業處理)</option>
+      <option value="L_03 模組清洗(委外及作業處理)">L_03 模組清洗(委外及作業處理)</option>
+      <option value="L_01 高壓維修/保養">L_01 高壓維修/保養</option>
+      <option value="L_04 環境整理(監工及作業處理)">L_04 環境整理(監工及作業處理)</option>
+    `;
+  } else if (cat.includes('機況')) {
+    itemSel.innerHTML = `
+      <option value="A_02 機況/裝置斷線">A_02 機況/裝置斷線</option>
+      <option value="A_01 機況/系統斷線">A_01 機況/系統斷線</option>
+      <option value="A_03 機況/斷電">A_03 機況/斷電</option>
+      <option value="A_04 機況/低電低阻抗">A_04 機況/低電低阻抗</option>
+    `;
+  } else {
+    itemSel.innerHTML = `<option value="客服指定處理項目">客服指定處理項目</option>`;
+  }
+}
+
+function addEngineerToDispatch() {
+  const sel = document.getElementById('dispEngineerAddSelect');
+  const eng = sel.value;
+  if (!tempAssignedEngineers.includes(eng)) {
+    tempAssignedEngineers.push(eng);
+    renderAssignedEngineersUI();
+  }
+}
+
+function removeEngineerFromDispatch(eng) {
+  tempAssignedEngineers = tempAssignedEngineers.filter(e => e !== eng);
+  renderAssignedEngineersUI();
+}
+
+function renderAssignedEngineersUI() {
+  const container = document.getElementById('dispSelectedEngineersList');
+  container.innerHTML = tempAssignedEngineers.map(e => `
+    <span class="badge blue" style="padding:4px 8px; font-size:.74rem; display:inline-flex; align-items:center; gap:4px;">
+      👤 ${e} <span onclick="removeEngineerFromDispatch('${e}')" style="cursor:pointer; font-weight:900;">&times;</span>
+    </span>
+  `).join('');
+}
+
+async function saveNewDispatch() {
+  const site = document.getElementById('dispSiteSelect').value;
+  const workType = document.getElementById('dispWorkType').value;
+  const dueDate = document.getElementById('dispDueDate').value;
+  const expense = document.getElementById('dispExpense').value;
+  const reportType = document.getElementById('dispReportType').value;
+  const source = document.getElementById('dispSource').value;
+  const category = document.getElementById('dispCategory').value;
+  const item = document.getElementById('dispItem').value;
+  const notes = document.getElementById('dispNotes').value.trim();
+
+  if (!site || !dueDate) {
+    alert('請選擇案場並指定應執行日！');
+    return;
+  }
+
+  const primaryEng = tempAssignedEngineers[0] || 'leoli';
+
+  if (activeWorkOrder) {
+    // 編輯現有工單
+    activeWorkOrder.field_name = site;
+    activeWorkOrder.work_type = workType;
+    activeWorkOrder.due_date = dueDate;
+    activeWorkOrder.engineer = primaryEng;
+    activeWorkOrder.status = '已安排';
+    activeWorkOrder.light_color = 'yellow';
+    activeWorkOrder.expense_attribution = expense;
+    activeWorkOrder.report_type = reportType;
+    activeWorkOrder.notes = notes;
+    alert(`工單 #${activeWorkOrder.item_no} 已更新為【已安排】狀態！`);
+  } else {
+    // 新增工單
+    const newNo = (workRecords.length + 1).toString();
+    const newOrder = {
+      item_no: newNo,
+      field_name: site,
+      engineer: primaryEng,
+      work_type: workType,
+      start_date: new Date().toISOString().split('T')[0],
+      period_days: workType === '巡檢' ? 90 : workType === '清洗' ? 180 : 365,
+      due_date: dueDate,
+      status: '已安排',
+      light_color: 'yellow',
+      expense_attribution: expense,
+      report_type: reportType,
+      dispatch_source: source,
+      dispatch_category: category,
+      dispatch_item: item,
+      notes: notes,
+      has_record: true,
+      has_report: true,
+      has_complete: true
+    };
+    workRecords.unshift(newOrder);
+
+    // 本地持久化
+    const custom = JSON.parse(localStorage.getItem('mow_custom_orders') || '[]');
+    custom.unshift(newOrder);
+    localStorage.setItem('mow_custom_orders', JSON.stringify(custom));
+
+    // Supabase 雲端同步
+    if (supabaseClient && isSupabaseConnected) {
+      try {
+        await supabaseClient.from('mow_work_orders').insert([{
+          item_no: newNo,
+          field_name: site,
+          engineer: primaryEng,
+          work_type: workType,
+          due_date: dueDate,
+          status: '已安排',
+          light_color: 'yellow',
+          notes: notes
+        }]);
+      } catch (err) {
+        console.warn('雲端寫入工單失敗:', err);
+      }
+    }
+
+    alert('派工任務建立成功！狀態已標定為【已安排】。');
+  }
+
+  closeModal('dispatchModal');
+  filterWorkTable();
+  updateWorkListSummaryCounters();
+}
+
+// -------------------------------------------------------------
+// RECORD SHEET ACTIONS (open_RW(2))
+// -------------------------------------------------------------
+function openRecordSheetModal(itemNo) {
+  const order = workRecords.find(w => String(w.item_no) === String(itemNo));
+  if (!order) return;
+  activeWorkOrder = order;
+
+  document.getElementById('recordModalTitle').innerText = `📝 【${order.field_name}】(${order.work_type}) 作業紀錄表`;
+  document.getElementById('recordSiteInfo').innerHTML = `
+    工單編號：#${order.item_no} ｜ 案場：<strong>${order.field_name}</strong> ｜ 責任工程師：<strong>${order.engineer}</strong> ｜ D-day：${order.due_date}
+  `;
+
+  const nowStr = new Date().toISOString().slice(0, 16);
+  document.getElementById('recStartTime').value = nowStr;
+  document.getElementById('recEndTime').value = nowStr;
+  document.getElementById('recMeterKwh').value = '';
+  document.getElementById('recFaultSystem').value = '';
+  document.getElementById('recFaultSection').value = '';
+  document.getElementById('recFaultLocation').value = '';
+  document.getElementById('recActionProgress').value = order.work_type === '巡檢' ? '進行例行性檢測：逆變器輸出效率良好、高低壓盤無局部過溫、組串電壓阻抗符合標準。' : '現場施工確認完畢，設備復歸運轉。';
+  document.getElementById('recIsFinal').checked = true;
+
+  tempReplacedParts = [];
+  renderReplacedPartsUI();
+  openModal('recordModal');
+}
+
+function addPartToRecord() {
+  const part = document.getElementById('recPartSelect').value;
+  const qty = parseInt(document.getElementById('recPartQty').value, 10) || 1;
+  if (!part) {
+    alert('請選擇更換料件！');
+    return;
+  }
+  tempReplacedParts.push({ part, qty, reqDate: new Date().toISOString().split('T')[0] });
+  renderReplacedPartsUI();
+}
+
+function removePartFromRecord(idx) {
+  tempReplacedParts.splice(idx, 1);
+  renderReplacedPartsUI();
+}
+
+function renderReplacedPartsUI() {
+  const container = document.getElementById('recPartsTable');
+  if (tempReplacedParts.length === 0) {
+    container.innerHTML = '<div style="font-size:.76rem; color:var(--muted); font-style:italic;">目前無更換零件需求</div>';
+    return;
+  }
+  container.innerHTML = `
+    <table style="width:100%; font-size:.76rem; min-width:auto;">
+      <thead><tr><th>更換料件名稱</th><th>數量</th><th>需求日期</th><th>操作</th></tr></thead>
+      <tbody>
+        ${tempReplacedParts.map((p, i) => `
+          <tr>
+            <td><strong>${p.part}</strong></td>
+            <td>${p.qty}</td>
+            <td>${p.reqDate}</td>
+            <td><button class="btn-clear" onclick="removePartFromRecord(${i})" style="padding:2px 6px;">刪除</button></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+async function saveRecordSheet() {
+  const start = document.getElementById('recStartTime').value;
+  const end = document.getElementById('recEndTime').value;
+  const meter = document.getElementById('recMeterKwh').value;
+  const progress = document.getElementById('recActionProgress').value.trim();
+  const isFinal = document.getElementById('recIsFinal').checked;
+
+  if (!progress) {
+    alert('請詳述作為及進度說明！');
+    return;
+  }
+
+  const recordData = {
+    work_order_id: activeWorkOrder?.item_no,
+    field_name: activeWorkOrder?.field_name,
+    start_time: start,
+    end_time: end,
+    meter_reading_kwh: meter,
+    action_progress: progress,
+    replaced_parts: tempReplacedParts,
+    is_final: isFinal,
+    created_at: new Date().toLocaleString('zh-TW', { hour12: false })
+  };
+
+  // 本地儲存紀錄表
+  const records = JSON.parse(localStorage.getItem('mow_work_records') || '[]');
+  records.unshift(recordData);
+  localStorage.setItem('mow_work_records', JSON.stringify(records));
+
+  // 若勾選最後一筆，自動標記完工
+  if (isFinal && activeWorkOrder) {
+    activeWorkOrder.status = '已完成';
+    activeWorkOrder.light_color = 'green';
+    const comp = JSON.parse(localStorage.getItem('mow_completed_orders') || '[]');
+    comp.push(activeWorkOrder.item_no);
+    localStorage.setItem('mow_completed_orders', JSON.stringify(comp));
+  }
+
+  // Supabase 雲端寫入
+  if (supabaseClient && isSupabaseConnected) {
+    try {
+      await supabaseClient.from('mow_work_records').insert([{
+        field_name: activeWorkOrder?.field_name,
+        meter_reading_kwh: parseFloat(meter) || 0,
+        action_progress: progress,
+        replaced_parts: tempReplacedParts,
+        is_final_record: isFinal,
+        bpm_status: '已簽核'
+      }]);
+    } catch (err) {
+      console.warn('雲端寫入作業紀錄表失敗:', err);
+    }
+  }
+
+  alert('作業紀錄表已儲存！' + (isFinal ? '（最後一筆核簽通過，工單已自動完工結案）' : ''));
+  closeModal('recordModal');
+  filterWorkTable();
+  updateWorkListSummaryCounters();
+}
+
+// -------------------------------------------------------------
+// REPORT PREVIEW ACTIONS (open_RW(3))
+// -------------------------------------------------------------
+function openReportModal(itemNo) {
+  const order = workRecords.find(w => String(w.item_no) === String(itemNo));
+  if (!order) return;
+
+  const site = masterRecords.find(m => m['案場名稱'] === order.field_name) || {};
+  const records = JSON.parse(localStorage.getItem('mow_work_records') || '[]');
+  const rec = records.find(r => r.field_name === order.field_name);
+
+  document.getElementById('reportModalTitle').innerText = `📄 維運作業報告書：【${order.field_name}】`;
+  document.getElementById('reportModalBody').innerHTML = `
+    <div style="border:2px solid var(--zn-primary); padding:16px 20px; background:#fff; border-radius:3px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--zn-accent); padding-bottom:10px; margin-bottom:14px;">
+        <div>
+          <h3 style="font-size:1.15rem; font-weight:900; color:var(--zn-primary);">進金生能源服務股份有限公司</h3>
+          <div style="font-size:.82rem; color:var(--muted); font-weight:700;">ACME POINTES ENERGY SERVICE ・ 太陽光電案場維運報告書</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:.82rem; font-weight:800; color:var(--zn-accent);">報告格式：${order.report_type || '進金生標準版'}</div>
+          <div style="font-size:.74rem; color:var(--muted);">產出日期：${new Date().toISOString().split('T')[0]}</div>
+        </div>
+      </div>
+
+      <div class="detail-grid">
+        <div class="detail-item"><div class="label">案場名稱</div><div class="value">${order.field_name} (${site['案場編號'] || '-'})</div></div>
+        <div class="detail-item"><div class="label">業主客戶</div><div class="value">${site['客戶名稱'] || '專案業主'}</div></div>
+        <div class="detail-item"><div class="label">工作類別 / 應執行日</div><div class="value">${order.work_type} / ${order.due_date}</div></div>
+        <div class="detail-item"><div class="label">負責工程師</div><div class="value">${order.engineer}</div></div>
+      </div>
+
+      <h4 style="font-size:.86rem; font-weight:800; color:var(--zn-primary); margin:12px 0 6px;">現場查核作業與診斷結論</h4>
+      <div style="background:var(--surface-muted); padding:12px; border-radius:3px; line-height:1.6; font-size:.82rem;">
+        ${rec ? rec.action_progress : '現場進行合約約定例行巡檢作業，高低壓電力盤線路、箱變溫度監控正常，逆變器無警報事件，已完成現場維護並復歸運轉。'}
+      </div>
+
+      <div style="margin-top:14px; display:flex; justify-content:space-between; font-size:.78rem; color:var(--muted); border-top:1px solid var(--line); padding-top:10px;">
+        <span>簽核狀態：<strong>BPM 電子簽核完成 (已核准)</strong></span>
+        <span>現場主管覆核：<strong>維運管理處核准</strong></span>
+      </div>
+    </div>
+  `;
+  openModal('reportModal');
+}
+
+function printReport() {
+  window.print();
+}
+
+// -------------------------------------------------------------
+// COMPLETE WORK ORDER ACTION (lbt完成)
+// -------------------------------------------------------------
+async function completeWorkOrder(itemNo) {
+  const order = workRecords.find(w => String(w.item_no) === String(itemNo));
+  if (!order) return;
+
+  if (!confirm(`確定要將案場【${order.field_name}】的工項 (${order.work_type}) 標記為【已完成】並結案嗎？`)) {
+    return;
+  }
+
+  order.status = '已完成';
+  order.light_color = 'green';
+  order.completed_at = new Date().toISOString();
+
+  // 本地儲存完工名單
+  const comp = JSON.parse(localStorage.getItem('mow_completed_orders') || '[]');
+  if (!comp.includes(order.item_no)) comp.push(order.item_no);
+  localStorage.setItem('mow_completed_orders', JSON.stringify(comp));
+
+  // Supabase 雲端更新
+  if (supabaseClient && isSupabaseConnected) {
+    try {
+      await supabaseClient.from('mow_work_orders').update({
+        status: '已完成',
+        light_color: 'green',
+        completed_at: new Date().toISOString()
+      }).eq('item_no', order.item_no);
+    } catch (err) {
+      console.warn('雲端更新完工狀態失敗:', err);
+    }
+  }
+
+  alert(`工單 #${order.item_no}【${order.field_name}】已成功完工結案！`);
+  filterWorkTable();
+  updateWorkListSummaryCounters();
+}
+
+// -------------------------------------------------------------
+// MASTER TABLE RENDERING
+// -------------------------------------------------------------
+function filterMasterTable() {
+  const kw = (document.getElementById('masterSearch').value || '').trim().toLowerCase();
+  const zone = document.getElementById('masterFilterZone').value;
+  const cont = document.getElementById('masterFilterContract').value;
+  const hv = document.getElementById('masterFilterHV').value;
+  const status = document.getElementById('masterFilterStatus').value;
+
+  filteredMaster = masterRecords.filter(item => {
+    if (zone && !String(item['維運分區'] || '').includes(zone)) return false;
+    if (cont && item['有效合約'] !== cont) return false;
+    if (hv && item['高壓案場'] !== hv) return false;
+    if (status && item['維運狀態標定'] !== status) return false;
+    if (kw) {
+      const match = Object.values(item).some(val => String(val || '').toLowerCase().includes(kw));
+      if (!match) return false;
+    }
+    return true;
+  });
+
+  currentMasterPage = 1;
+  renderMasterTable();
+}
+
+function clearMasterFilters() {
+  document.getElementById('masterSearch').value = '';
+  document.getElementById('masterFilterZone').value = '';
+  document.getElementById('masterFilterContract').value = '';
+  document.getElementById('masterFilterHV').value = '';
+  document.getElementById('masterFilterStatus').value = '';
+  filterMasterTable();
+}
+
+function renderMasterTable() {
+  const tbody = document.getElementById('masterTableBody');
+  const total = filteredMaster.length;
+  document.getElementById('masterCountText').innerText = `顯示 ${total} 筆 (總共 ${masterRecords.length} 筆)`;
+
+  const start = (currentMasterPage - 1) * masterPageSize;
+  const end = Math.min(start + masterPageSize, total);
+  const pageItems = filteredMaster.slice(start, end);
+
+  tbody.innerHTML = pageItems.map(item => {
+    let badgeClass = 'badge gray';
+    if (item['維運狀態標定'] === '正常') badgeClass = 'badge green';
+    else if (item['維運狀態標定'] === '待執行派工') badgeClass = 'badge amber';
+    else if (item['維運狀態標定'] === '逾期警示') badgeClass = 'badge red';
+
+    return `
+      <tr>
+        <td style="font-family:'JetBrains Mono',monospace; font-weight:700;">${item['案場編號'] || '-'}</td>
+        <td style="font-weight:700; color:var(--zn-primary);">${item['案場名稱'] || '-'}</td>
+        <td><span class="${badgeClass}">${item['維運狀態標定'] || '正常'}</span></td>
+        <td style="font-family:'JetBrains Mono',monospace; font-weight:700;">${item['容量(kW)']}</td>
+        <td>${item['維運分區'] || '-'}</td>
+        <td>${item['負責工程師'] || '-'}</td>
+        <td>${item['負責管理師'] || '-'}</td>
+        <td style="font-size:.76rem;">${item['客戶名稱'] || '-'}</td>
+        <td><span class="badge ${item['有效合約'] === '有' ? 'green' : 'gray'}">${item['有效合約']}</span></td>
+        <td style="font-family:'JetBrains Mono',monospace; font-size:.76rem;">${item['巡檢達成率']}</td>
+        <td><span class="badge ${item['待執行工單數'] > 0 ? 'amber' : 'gray'}">${item['待執行工單數']} 筆</span></td>
+        <td style="font-size:.72rem; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item['案場地址'] || '-'}</td>
+        <td>
+          <button class="btn-clear" onclick="openSiteDetail('${item['案場編號']}')" style="padding:2px 6px; font-size:.70rem;">明細</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  renderMasterPagination(total);
+}
+
+function renderMasterPagination(total) {
+  const totalPages = Math.ceil(total / masterPageSize) || 1;
+  document.getElementById('masterPageInfo').innerText = `第 ${currentMasterPage} / ${totalPages} 頁 (每頁 ${masterPageSize} 筆)`;
+
+  const container = document.getElementById('masterPagination');
+  let btns = '';
+
+  btns += `<button class="page-btn" ${currentMasterPage === 1 ? 'disabled' : ''} onclick="changeMasterPage(${currentMasterPage - 1})">上一頁</button>`;
+  
+  const startP = Math.max(1, currentMasterPage - 2);
+  const endP = Math.min(totalPages, currentMasterPage + 2);
+  for (let i = startP; i <= endP; i++) {
+    btns += `<button class="page-btn ${i === currentMasterPage ? 'active' : ''}" onclick="changeMasterPage(${i})">${i}</button>`;
+  }
+
+  btns += `<button class="page-btn" ${currentMasterPage === totalPages ? 'disabled' : ''} onclick="changeMasterPage(${currentMasterPage + 1})">下一頁</button>`;
+  container.innerHTML = btns;
+}
+
+function changeMasterPage(page) {
+  currentMasterPage = page;
+  renderMasterTable();
+  window.scrollTo({ top: 120, behavior: 'smooth' });
+}
+
+// -------------------------------------------------------------
+// ROUTINE SCHEDULE TABLE RENDERING
+// -------------------------------------------------------------
+function filterRoutineTable() {
+  const kw = (document.getElementById('routineSearch').value || '').trim().toLowerCase();
+  const zone = document.getElementById('routineFilterZone').value;
+
+  filteredRoutine = routineRecords.filter(item => {
+    if (zone && !String(item.zone || '').includes(zone)) return false;
+    if (kw) {
+      const match = (item.field_name || '').toLowerCase().includes(kw) ||
+                    (item.field_no || '').toLowerCase().includes(kw) ||
+                    (item.engineer || '').toLowerCase().includes(kw);
+      if (!match) return false;
+    }
+    return true;
+  });
+
+  currentRoutinePage = 1;
+  renderRoutineTable();
+}
+
+function renderRoutineTable() {
+  const tbody = document.getElementById('routineTableBody');
+  const total = filteredRoutine.length;
+  document.getElementById('routineCountText').innerText = `共 ${total} 筆`;
+
+  const start = (currentRoutinePage - 1) * routinePageSize;
+  const end = Math.min(start + routinePageSize, total);
+  const pageItems = filteredRoutine.slice(start, end);
+
+  tbody.innerHTML = pageItems.map(item => `
+    <tr>
+      <td>${item.zone || '-'}</td>
+      <td style="font-family:'JetBrains Mono',monospace; font-weight:700;">${item.field_no}</td>
+      <td style="font-weight:700; color:var(--zn-primary);">${item.field_name}</td>
+      <td>${item.engineer || '-'}</td>
+      <td style="font-size:.74rem;">${item.contract_years || '-'}</td>
+      <td style="font-family:'JetBrains Mono',monospace;">${item.insp_period ? item.insp_period + '天' : '-'}</td>
+      <td style="font-family:'JetBrains Mono',monospace;">${item.insp_annual_target || 0} / ${item.insp_done || 0}</td>
+      <td><span class="badge ${item.insp_annual_target > 0 && item.insp_done >= item.insp_annual_target ? 'green' : 'amber'}">${item.insp_annual_target > 0 ? Math.round((item.insp_done / item.insp_annual_target) * 100) + '%' : '-'}</span></td>
+      <td style="font-family:'JetBrains Mono',monospace;">${item.clean_period ? item.clean_period + '天' : '-'}</td>
+      <td style="font-family:'JetBrains Mono',monospace;">${item.clean_annual_target || 0} / ${item.clean_done || 0}</td>
+      <td style="font-family:'JetBrains Mono',monospace;">${item.hv_period ? item.hv_period + '天' : '-'}</td>
+      <td style="font-family:'JetBrains Mono',monospace;">${item.hv_annual_target || 0} / ${item.hv_done || 0}</td>
+      <td style="font-family:'JetBrains Mono',monospace;">${item.weed_period ? item.weed_period + '天' : '-'}</td>
+      <td style="font-family:'JetBrains Mono',monospace;">${item.weed_annual_target || 0} / ${item.weed_done || 0}</td>
+    </tr>
+  `).join('');
+
+  renderRoutinePagination(total);
+}
+
+function renderRoutinePagination(total) {
+  const totalPages = Math.ceil(total / routinePageSize) || 1;
+  document.getElementById('routinePageInfo').innerText = `第 ${currentRoutinePage} / ${totalPages} 頁`;
+
+  const container = document.getElementById('routinePagination');
+  let btns = '';
+
+  btns += `<button class="page-btn" ${currentRoutinePage === 1 ? 'disabled' : ''} onclick="changeRoutinePage(${currentRoutinePage - 1})">上一頁</button>`;
+  
+  const startP = Math.max(1, currentRoutinePage - 2);
+  const endP = Math.min(totalPages, currentRoutinePage + 2);
+  for (let i = startP; i <= endP; i++) {
+    btns += `<button class="page-btn ${i === currentRoutinePage ? 'active' : ''}" onclick="changeRoutinePage(${i})">${i}</button>`;
+  }
+
+  btns += `<button class="page-btn" ${currentRoutinePage === totalPages ? 'disabled' : ''} onclick="changeRoutinePage(${currentRoutinePage + 1})">下一頁</button>`;
+  container.innerHTML = btns;
+}
+
+function changeRoutinePage(page) {
+  currentRoutinePage = page;
+  renderRoutineTable();
+}
+
+// -------------------------------------------------------------
+// CONTACTS & CONTRACTS
+// -------------------------------------------------------------
+function filterContacts() {
+  const kw = (document.getElementById('contactSearch').value || '').trim().toLowerCase();
+  renderContacts(kw);
+}
+
+function renderContacts(kw = '') {
+  const tbody = document.getElementById('contactTableBody');
+  const filtered = contactRecords.filter(c => {
+    if (!kw) return true;
+    return Object.values(c).some(v => String(v || '').toLowerCase().includes(kw));
+  });
+
+  tbody.innerHTML = filtered.slice(0, 50).map(c => `
+    <tr>
+      <td style="font-weight:700;">${c['案場名稱'] || '-'}</td>
+      <td>${c['連絡人姓名'] || '-'}</td>
+      <td style="font-family:'JetBrains Mono',monospace;">${c['連絡電話'] || '-'}</td>
+      <td>${c['電子郵件(E-Mail)'] || '-'}</td>
+    </tr>
+  `).join('');
+}
+
+function filterContracts() {
+  const kw = (document.getElementById('contractSearch').value || '').trim().toLowerCase();
+  renderContracts(kw);
+}
+
+function renderContracts(kw = '') {
+  const tbody = document.getElementById('contractTableBody');
+  const filtered = contractRecords.filter(c => {
+    if (!kw) return true;
+    return Object.values(c).some(v => String(v || '').toLowerCase().includes(kw));
+  });
+
+  tbody.innerHTML = filtered.slice(0, 50).map(c => `
+    <tr>
+      <td style="font-family:'JetBrains Mono',monospace; font-weight:700;">${c['合約編號'] || '-'}</td>
+      <td style="font-weight:700;">${c['案場名稱'] || '-'}</td>
+      <td>${c['合約類型'] || '-'}</td>
+      <td><span class="badge ${c['合約狀態'] === '進行中' ? 'green' : 'gray'}">${c['合約狀態'] || '-'}</span></td>
+      <td style="font-size:.72rem;">${c['合約開始日'] || ''} ~ ${c['合約結束日'] || ''}</td>
+    </tr>
+  `).join('');
+}
+
+// -------------------------------------------------------------
+// SITE DETAIL DRAWER MODAL
+// -------------------------------------------------------------
+function openSiteDetail(fieldNo) {
+  const site = masterRecords.find(m => m['案場編號'] === fieldNo);
+  if (!site) return;
+
+  document.getElementById('modalTitle').innerText = `【${site['案場編號']}】${site['案場名稱']} - 全維度案場明細`;
+  
+  const body = document.getElementById('modalBody');
+  body.innerHTML = `
+    <div style="background:var(--zn-accent-soft); padding:10px 14px; border-radius:3px; margin-bottom:14px; border-left:4px solid var(--zn-accent);">
+      <div style="font-size:1rem; font-weight:900; color:var(--zn-primary);">${site['案場名稱']} (${site['案場編號']})</div>
+      <div style="font-size:.82rem; color:var(--ink-secondary); margin-top:2px;">
+        業主客戶：<strong>${site['客戶名稱'] || '無'}</strong> ｜ 責任分區：<strong>${site['維運分區'] || '未設定'}</strong> ｜ 工程師：<strong>${site['負責工程師'] || '未指定'}</strong> ｜ 管理師：<strong>${site['負責管理師'] || '未指定'}</strong>
+      </div>
+    </div>
+
+    <h4 style="font-size:.88rem; font-weight:800; color:var(--zn-primary); margin-bottom:8px;">⚡ 電廠發電規格與硬體參數</h4>
+    <div class="detail-grid">
+      <div class="detail-item"><div class="label">裝置容量</div><div class="value">${site['容量(kW)']} kW</div></div>
+      <div class="detail-item"><div class="label">案場屬性 / 類型</div><div class="value">${site['案場屬性'] || '-'} / ${site['案場類型'] || '-'}</div></div>
+      <div class="detail-item"><div class="label">高壓案場 / 我司高保</div><div class="value">${site['高壓案場'] || '否'} / ${site['高保由我司施作'] || '否'}</div></div>
+      <div class="detail-item"><div class="label">INV 逆變器屬性</div><div class="value">${site['INV採購屬性'] || '-'}</div></div>
+      <div class="detail-item"><div class="label">PV 模組採購屬性</div><div class="value">${site['PV採購屬性'] || '-'}</div></div>
+      <div class="detail-item"><div class="label">併聯 / 驗收日期</div><div class="value">${site['併聯日期'] || '-'} / ${site['驗收日期'] || '-'}</div></div>
+      <div class="detail-item"><div class="label">躉售費率 / 交流規格</div><div class="value">${site['躉售費率'] || '-'} / ${site['交流規格'] || '-'}</div></div>
+      <div class="detail-item"><div class="label">GPS 經緯度座標</div><div class="value">${site['GPS座標'] || '未設定'}</div></div>
+      <div class="detail-item" style="grid-column:span 2;"><div class="label">案場完整地址</div><div class="value">${site['案場地址'] || '未登記地址'}</div></div>
+    </div>
+
+    <h4 style="font-size:.88rem; font-weight:800; color:var(--zn-primary); margin-bottom:8px;">📜 維運合約與例行派工履約 (R1)</h4>
+    <div class="detail-grid">
+      <div class="detail-item"><div class="label">有效合約現況</div><div class="value">${site['有效合約'] === '有' ? '進行中 (' + site['進行中合約編號'] + ')' : '無有效合約'}</div></div>
+      <div class="detail-item"><div class="label">合約期間</div><div class="value">${site['合約起訖日'] || '未記載'} (年限: ${site['合約年限'] || '-'})</div></div>
+      <div class="detail-item"><div class="label">定期巡檢 (週期 / 年度約定 / 已執行)</div><div class="value">${site['巡檢週期'] || '-'}天 / ${site['巡檢年度次數'] || 0}次 / 已執 ${site['已巡檢次數'] || 0}次 (達成率: ${site['巡檢達成率']})</div></div>
+      <div class="detail-item"><div class="label">模組清洗 (週期 / 年度約定 / 已執行)</div><div class="value">${site['清洗週期'] || '-'}天 / ${site['清洗年度次數'] || 0}次 / 已執 ${site['已清洗次數'] || 0}次 (達成率: ${site['清洗達成率']})</div></div>
+      <div class="detail-item"><div class="label">高壓保養週期 / 已執行</div><div class="value">${site['高壓週期'] || '-'}天 / 已執 ${site['已高壓次數'] || 0}次</div></div>
+      <div class="detail-item"><div class="label">除草環境整理 / 已執行</div><div class="value">${site['環境整理週期'] || '-'}天 / 已執 ${site['已環境次數'] || 0}次</div></div>
+    </div>
+
+    <h4 style="font-size:.88rem; font-weight:800; color:var(--zn-primary); margin-bottom:8px;">👥 案場連絡人窗口明細</h4>
+    <div style="background:var(--surface-muted); padding:8px 12px; border-radius:3px; margin-bottom:12px;">
+      <div>主要連絡人：<strong>${site['主要連絡人'] || '無'}</strong> ｜ 電話：<strong>${site['連絡電話'] || '無'}</strong> ｜ 信箱：${site['電子信箱'] || '無'}</div>
+      <div style="font-size:.78rem; color:var(--muted); margin-top:4px;">全體連絡名單：${site['全部連絡人匯總'] || '無額外窗口'}</div>
+    </div>
+
+    <h4 style="font-size:.88rem; font-weight:800; color:var(--zn-primary); margin-bottom:8px;">🔌 台電電號與硬體設備</h4>
+    <div style="background:var(--surface-muted); padding:8px 12px; border-radius:3px; font-size:.8rem;">
+      <div>台電電號：${site['電號明細'] || '無登記電號'}</div>
+      <div style="margin-top:4px;">設備配件商：${site['設備配件明細'] || '無配件商記錄'}</div>
+      <div style="margin-top:4px;">注意事項：${site['注意事項/備註'] || '無特殊注意事項'}</div>
+    </div>
+  `;
+
+  openModal('siteModal');
+}
+
+// -------------------------------------------------------------
+// REPORTING SYSTEM
+// -------------------------------------------------------------
+async function submitReport() {
+  const role = document.getElementById('repRole').value;
+  const name = document.getElementById('repName').value.trim();
+  const field = document.getElementById('repField').value.trim();
+  const category = document.getElementById('repCategory').value;
+  const content = document.getElementById('repContent').value.trim();
+
+  if (!name || !field || !content) {
+    alert('請完整填寫姓名、關聯案場名稱與回報內容！');
+    return;
+  }
+
+  const newReport = {
+    id: Date.now(),
+    role,
+    name,
+    field,
+    category,
+    content,
+    time: new Date().toLocaleString('zh-TW', { hour12: false })
+  };
+
+  const stored = JSON.parse(localStorage.getItem('om_reports') || '[]');
+  stored.unshift(newReport);
+  localStorage.setItem('om_reports', JSON.stringify(stored));
+
+  // Supabase 雲端寫入
+  if (supabaseClient && isSupabaseConnected) {
+    try {
+      await supabaseClient.from('mow_collaborative_reports').insert([{
+        role,
+        reporter_name: name,
+        field_name: field,
+        category,
+        content
+      }]);
+    } catch (err) {
+      console.warn('雲端寫入協同回報失敗:', err);
+    }
+  }
+
+  alert('協同回報已成功送出！');
+  document.getElementById('repContent').value = '';
+  renderTimeline();
+}
+
+function renderTimeline() {
+  const container = document.getElementById('timelineContainer');
+  const stored = JSON.parse(localStorage.getItem('om_reports') || '[]');
+
+  if (stored.length === 0) {
+    stored.push({
+      role: '工程師',
+      name: '李孟家(Leo)',
+      field: '芳生螺絲二廠一期',
+      category: '定期巡檢結果回報',
+      content: '完成 90 天季檢，逆變器組串輸入正常，箱變無過溫現象，模組表層有輕微落塵，預計次季清洗。',
+      time: '2026-10-14 11:20:15'
+    });
+    stored.push({
+      role: '業務',
+      name: '王大衛',
+      field: '可口可樂(外來案)',
+      category: '合約到期續約諮詢',
+      content: '客戶詢問 2028-09-30 到期後之延伸維運報價，請工程部協助確認歷年維運工時清單。',
+      time: '2026-10-14 09:45:30'
+    });
+  }
+
+  document.getElementById('timelineCount').innerText = stored.length;
+
+  container.innerHTML = stored.map(s => `
+    <div class="timeline-item">
+      <div class="t-header">
+        <span>【${s.role}】${s.name} ➔ ${s.field}</span>
+        <span>${s.time}</span>
+      </div>
+      <div style="font-size:.74rem; font-weight:700; color:var(--zn-accent); margin-top:2px;">類別：${s.category}</div>
+      <div class="t-content">${s.content}</div>
+    </div>
+  `).join('');
+}
+
+// -------------------------------------------------------------
+// GENERIC MODAL CONTROLS
+// -------------------------------------------------------------
+function openModal(modalId) {
+  const el = document.getElementById(modalId);
+  if (el) el.classList.add('active');
+}
+
+function closeModal(modalId) {
+  const el = document.getElementById(modalId);
+  if (el) el.classList.remove('active');
+}
+
+function closeModalOnOverlay(e, modalId) {
+  if (e.target.id === modalId) closeModal(modalId);
+}
+
+// 匯出 Excel
+function exportDataExcel() {
+  window.location.href = "維運管理系統_案場資料庫_完整資料表.xlsx";
+}
+</script>
+
+</body>
+</html>
