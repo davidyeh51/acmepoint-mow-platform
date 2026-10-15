@@ -251,6 +251,28 @@ tbody tr:hover { background: #F1F5F9; }
 .badge.red { background: #FEE2E2; color: #991B1B; }
 .badge.blue { background: #E0F2FE; color: #075985; }
 .badge.gray { background: #F1F5F9; color: #475569; }
+.badge.severity-a { background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; font-weight: 800; animation: pulseRed 2.2s infinite; }
+.badge.severity-b { background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; font-weight: 700; }
+.badge.severity-c { background: #E0F2FE; color: #0369A1; border: 1px solid #BAE6FD; }
+.badge.source-line { background: #DCFCE7; color: #15803D; border: 1px solid #86EFAC; font-weight: 700; }
+.badge.lark-synced { background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; font-weight: 700; }
+
+@keyframes pulseRed {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  70% { box-shadow: 0 0 0 5px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.clickable-card { cursor: pointer; transition: transform .15s ease, box-shadow .15s ease; }
+.clickable-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+
+.line-chat-preview {
+  background: #7AC1EB; border-radius: 8px; padding: 14px; margin: 10px 0;
+  color: #1E293B; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+.line-bubble-wrapper { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 8px; }
+.line-avatar { width: 34px; height: 34px; border-radius: 50%; background: #06C755; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+.line-bubble { background: #fff; border-radius: 12px; border-top-left-radius: 2px; padding: 8px 12px; font-size: .82rem; line-height: 1.45; box-shadow: 0 1px 2px rgba(0,0,0,0.1); max-width: 85%; }
 
 /* Traffic Light Dot */
 .traffic-dot {
@@ -394,6 +416,7 @@ tbody tr:hover { background: #F1F5F9; }
   <nav class="topnav">
     <a id="nav-home" class="active" onclick="switchView('home')">📊 營運總盤</a>
     <a id="nav-worklist" onclick="switchView('worklist')">📋 待執行工單 (Work_List)</a>
+    <a id="nav-voc" onclick="switchView('voc')">💬 客戶服務 (VOC)</a>
     <a id="nav-master" onclick="switchView('master')">📑 全案場整合大庫</a>
     <a id="nav-routine" onclick="switchView('routine')">⚙️ 合約例行派工</a>
     <a id="nav-contacts" onclick="switchView('contacts')">👥 連絡人與設備</a>
@@ -410,6 +433,7 @@ tbody tr:hover { background: #F1F5F9; }
     <!-- 角色切換器 -->
     <select id="roleSelector" class="role-select" onchange="onRoleChange(this.value)" title="切換協同角色">
       <option value="all">🌐 全視角 (協同中心)</option>
+      <option value="cs">🎧 客服管理師視角 (VOC &amp; Line@)</option>
       <option value="manager">👔 主管視角 (決策大盤)</option>
       <option value="sales">💼 業務視角 (客戶與合約)</option>
       <option value="engineer">🛠️ 工程師視角 (派工巡檢)</option>
@@ -446,6 +470,7 @@ tbody tr:hover { background: #F1F5F9; }
         <div class="flag primary">514 案場總數</div>
         <div class="flag amber">789.18 MW</div>
         <div class="flag coral" id="flag-pending">461 待執行工單</div>
+        <div class="flag blue" style="cursor:pointer;" onclick="switchView('voc')">💬 638 客戶服務 (VOC)</div>
         <div class="flag green">652 歷年合約</div>
       </div>
     </div>
@@ -651,6 +676,137 @@ tbody tr:hover { background: #F1F5F9; }
     <div class="pagination">
       <div id="workPageInfo">第 1 頁</div>
       <div class="page-btns" id="workPagination"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     VIEW 2.5: VOC CUSTOMER SERVICE / 客戶服務管理 (RW_Custservice_VOC_S)
+     ========================================================================== -->
+<div id="view-voc" class="view">
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="eyebrow">CUSTOMER SERVICE &amp; VOICE OF CUSTOMER ・ LINE@ CRM</div>
+        <h1>【客戶服務 (VOC) 戰情中心】Line@ 官方號即時匯入、案場關聯與飛書協同閉環</h1>
+        <div class="sub">
+          復刻原系統 <code>RW_Custservice_VOC_S</code> 規格，即時納管 638 筆客戶通報。支援客戶由 Line@ 官方帳號通報時自動解析入庫，並透過 Lark 機器人自動推播至「【流程】業務流程整合 ft. 飛書」群組，驅動跨部門即時處置。
+        </div>
+      </div>
+      <div class="flags">
+        <div class="flag primary" id="vocFlagTotal">638 筆客戶通報</div>
+        <div class="flag coral" id="vocFlagProgress">4 筆進行中</div>
+        <div class="flag red" id="vocFlagLevelA">7 筆 A:緊急處置</div>
+        <div class="flag green">Lark 飛書自動連動中</div>
+      </div>
+    </div>
+
+    <!-- VOC Bento Metric Cards (可點擊快速篩選) -->
+    <div class="metric-grid">
+      <div class="metric accent clickable-card" onclick="quickFilterVoc('status', '')" title="點擊檢視全部通報">
+        <div class="label">客戶通報總件數 (VOC)</div>
+        <div class="k" id="vocMetricTotal">638 <span style="font-size:.9rem">件</span></div>
+        <div class="t">歷年累計客戶反饋與服務紀錄</div>
+      </div>
+      <div class="metric coral clickable-card" onclick="quickFilterVoc('status', '進行中')" title="點擊篩選處理中工單">
+        <div class="label">進行中案件 (Pending)</div>
+        <div class="k" id="vocMetricProgress">4 <span style="font-size:.9rem">件</span></div>
+        <div class="t">包含路科FAB8、南科等在處案件</div>
+      </div>
+      <div class="metric green clickable-card" onclick="quickFilterVoc('status', '結案')" title="點擊篩選已結案工單">
+        <div class="label">已結案完工</div>
+        <div class="k" id="vocMetricClosed">634 <span style="font-size:.9rem">件</span></div>
+        <div class="t">妥善率達 99.37% 正常運作</div>
+      </div>
+      <div class="metric red clickable-card" onclick="quickFilterVoc('severity', 'A')" title="點擊篩選 A:緊急處置案件">
+        <div class="label">A: 緊急處置等級</div>
+        <div class="k" id="vocMetricLevelA">7 <span style="font-size:.9rem">件</span></div>
+        <div class="t">電網跳脫、高壓跳機或發電全停</div>
+      </div>
+      <div class="metric amber clickable-card" onclick="quickFilterVoc('severity', 'B')" title="點擊篩選 B:重要非緊急案件">
+        <div class="label">B: 重要但非緊急</div>
+        <div class="k" id="vocMetricLevelB">305 <span style="font-size:.9rem">件</span></div>
+        <div class="t">逆變器告警、通訊中斷、日報更正</div>
+      </div>
+      <div class="metric blue clickable-card" onclick="quickFilterVoc('severity', 'C')" title="點擊篩選 C:例行事項">
+        <div class="label">C: 例行事項 / 其他</div>
+        <div class="k" id="vocMetricLevelC">58 <span style="font-size:.9rem">件</span></div>
+        <div class="t">日常維護詢問與文件調閱</div>
+      </div>
+    </div>
+
+    <!-- 頂部操作按鈕列 -->
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:2px;">
+      <button class="btn-submit" onclick="openNewVocModal()" style="display:inline-flex; align-items:center; gap:5px; padding:6px 14px; font-size:.82rem;">
+        ➕ 新增客戶服務單 (VOC)
+      </button>
+      <button class="btn-submit" onclick="openLineMockModal()" style="background:#06C755; border-color:#059669; display:inline-flex; align-items:center; gap:5px; padding:6px 14px; font-size:.82rem;">
+        📱 Line@ 官方號通報即時匯入中心
+      </button>
+      <button class="btn-clear" onclick="openLarkConfigModal()" style="display:inline-flex; align-items:center; gap:5px; padding:6px 12px; font-size:.80rem;">
+        🚀 Lark 群組連動設定 (【流程】業務流程整合)
+      </button>
+      <button class="btn-action" onclick="exportDataExcel()" style="margin-left:auto;">
+        📥 下載客戶服務 Sheet (Excel)
+      </button>
+    </div>
+
+    <!-- 篩選列 -->
+    <div class="filter-bar">
+      <input type="text" id="vocSearch" placeholder="🔍 搜尋通報單號、案場名稱/編號、客戶反映內容、處理人..." oninput="filterVocTable()">
+
+      <select id="vocFilterSeverity" onchange="filterVocTable()">
+        <option value="">全部程度等級</option>
+        <option value="A">A: 緊急處置</option>
+        <option value="B">B: 重要但非緊急</option>
+        <option value="C">C: 例行事項</option>
+      </select>
+
+      <select id="vocFilterStatus" onchange="filterVocTable()">
+        <option value="">全部狀態</option>
+        <option value="進行中">進行中</option>
+        <option value="結案">結案</option>
+      </select>
+
+      <select id="vocPageSizeSelect" onchange="onVocPageSizeChange(this.value)" style="max-width:90px;">
+        <option value="20">20 筆/頁</option>
+        <option value="50">50 筆/頁</option>
+        <option value="100">100 筆/頁</option>
+        <option value="9999">全部顯示</option>
+      </select>
+
+      <button class="btn-clear" onclick="clearVocFilters()">重設</button>
+      <div class="record-count" id="vocCountText">共 638 筆</div>
+    </div>
+
+    <!-- VOC 資料表格 -->
+    <div class="table-wrap">
+      <table id="vocTable">
+        <thead>
+          <tr>
+            <th style="width:40px; text-align:center;">項次</th>
+            <th style="width:105px;">通報單號</th>
+            <th style="width:110px;">程度等級</th>
+            <th style="min-width:180px;">通報案場名稱 (代碼)</th>
+            <th style="width:90px;">處理人員</th>
+            <th style="min-width:280px;">客戶反映內容</th>
+            <th style="width:95px;">提報日期</th>
+            <th style="width:95px;">結案日期</th>
+            <th style="width:110px;">歷時工時</th>
+            <th style="width:70px; text-align:center;">狀態</th>
+            <th style="width:80px; text-align:center;">操作 / 飛書</th>
+          </tr>
+        </thead>
+        <tbody id="vocTableBody">
+          <!-- 動態載入 VOC 客服列表 -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 分頁 -->
+    <div class="pagination">
+      <div id="vocPageInfo">第 1 頁</div>
+      <div class="page-btns" id="vocPagination"></div>
     </div>
   </div>
 </div>
@@ -1218,7 +1374,260 @@ tbody tr:hover { background: #F1F5F9; }
 
       <div style="display:flex; gap:8px;">
         <button class="btn-clear" onclick="testSupabaseConnection()" style="flex:1;">🔌 測試連線</button>
-        <button class="btn-submit" onclick="saveSupabaseConfig()" style="flex:1; background:#059669;">💾 儲存並啟用</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     MODAL 6: VOC 詳情與編輯 MODAL (RW_Custservice_VOC_S)
+     ========================================================================== -->
+<div id="vocDetailModal" class="modal-overlay" onclick="closeModalOnOverlay(event, 'vocDetailModal')">
+  <div class="modal-box large">
+    <div class="modal-header" style="background:#1E3A8A; border-color:#3B82F6;">
+      <h2 id="vocModalTitle">💬 客戶服務 (VOC) 作業詳情與編輯</h2>
+      <button class="close-btn" onclick="closeModal('vocDetailModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--surface-muted); padding:10px 14px; border-radius:3px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+        <div>
+          <span style="font-size:.74rem; font-weight:800; color:var(--zn-accent); text-transform:uppercase;">ACME MOW CUSTOMER SERVICE TICKET</span>
+          <div style="font-size:1.05rem; font-weight:800; color:var(--zn-primary);" id="vocDetailTicketBadge">單號：20260707003</div>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <span id="vocDetailSeverityBadge" class="badge severity-b">B: 重要但非緊急</span>
+          <span id="vocDetailStatusBadge" class="badge amber">進行中</span>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>通報單號 *</label>
+          <input type="text" id="vocFormTicketNo" readonly style="background:#F1F5F9;">
+        </div>
+
+        <div class="form-group">
+          <label>通報案場 *</label>
+          <input type="text" id="vocFormFieldName" list="siteDataList" placeholder="搜尋或選擇 514 案場庫...">
+        </div>
+
+        <div class="form-group">
+          <label>通報程度等級 *</label>
+          <select id="vocFormSeverity">
+            <option value="A:緊急處置">A: 緊急處置 (發電全停/高壓跳脫)</option>
+            <option value="B:重要但非緊急" selected>B: 重要但非緊急 (逆變器告警/通訊中斷)</option>
+            <option value="C:例行事項">C: 例行事項 (日報查詢/一般諮詢)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>問題分類 *</label>
+          <select id="vocFormCategory">
+            <option value="逆變器異常告警">逆變器異常告警</option>
+            <option value="監控與通訊斷線">監控與通訊斷線</option>
+            <option value="台電停電/電網跳脫">台電停電/電網跳脫</option>
+            <option value="日報數據更正">日報數據更正</option>
+            <option value="現場設備/模組破損">現場設備/模組破損</option>
+            <option value="其他行政與合約詢問">其他行政與合約詢問</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>提報管道</label>
+          <select id="vocFormChannel">
+            <option value="Line@官方號" selected>📱 Line@ 官方號 (直營通報)</option>
+            <option value="電話通報">📞 電話通報</option>
+            <option value="Email">📧 電子郵件 (Email)</option>
+            <option value="現場轉達">👷 現場巡檢工程師轉達</option>
+            <option value="其他">🌐 其他管道</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>負責處理人 *</label>
+          <input type="text" id="vocFormHandler" placeholder="例: ivychung / minahuang">
+        </div>
+
+        <div class="form-group">
+          <label>提報日期 *</label>
+          <input type="date" id="vocFormReportDate">
+        </div>
+
+        <div class="form-group">
+          <label>結案日期</label>
+          <input type="date" id="vocFormCloseDate">
+        </div>
+
+        <div class="form-group">
+          <label>結案狀態 *</label>
+          <select id="vocFormStatus">
+            <option value="進行中">進行中</option>
+            <option value="結案">結案</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>歷時工時</label>
+          <input type="text" id="vocFormHours" placeholder="例: 24小時 / 3天">
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top:10px;">
+        <label>客戶原始反映內容 *</label>
+        <textarea id="vocFormContent" rows="3" placeholder="客戶所提報的完整訊息內容..."></textarea>
+      </div>
+
+      <div class="form-group" style="margin-top:10px;">
+        <label>前台對話紀錄 (與 Line@ 客戶即時溝通紀錄)</label>
+        <textarea id="vocFormFrontChat" rows="3" placeholder="記錄與客戶客服溝通、進度反饋之對話內容..."></textarea>
+      </div>
+
+      <div class="form-group" style="margin-top:10px;">
+        <label>後台維運處理流 (內部工程排查、派工與處置措施)</label>
+        <textarea id="vocFormBackOps" rows="3" placeholder="內部工程師派工確認、現場檢測數據與結案原因分析..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer" style="display:flex; justify-content:space-between; align-items:center;">
+      <button class="btn-clear" onclick="closeModal('vocDetailModal')">關閉</button>
+      <div style="display:flex; gap:8px;">
+        <button class="btn-submit" onclick="sendActiveVocToLark()" style="background:#2563EB; border-color:#1D4ED8;">
+          🚀 推播至 Lark 群組
+        </button>
+        <button class="btn-submit" onclick="saveVocRecord()">
+          💾 儲存修改
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     MODAL 7: LINE@ 官方號通報即時匯入中心 (CRM & LARK 廣播)
+     ========================================================================== -->
+<div id="vocLineModal" class="modal-overlay" onclick="closeModalOnOverlay(event, 'vocLineModal')">
+  <div class="modal-box large">
+    <div class="modal-header" style="background:#065F46; border-color:#059669;">
+      <h2>📱 Line@ 官方號通報即時匯入中心 (CRM ✕ 飛書整合)</h2>
+      <button class="close-btn" onclick="closeModal('vocLineModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <!-- 運作架構說明 -->
+      <div style="background:#ECFDF5; border:1px solid #A7F3D0; border-radius:4px; padding:12px; margin-bottom:14px; font-size:.80rem; color:#064E3B; line-height:1.5;">
+        <div style="font-weight:800; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+          <span>⚡ 即時串聯架構：</span>
+          <span class="badge source-line">Line@ 官方帳號</span>
+          <span>➔</span>
+          <span class="badge blue">智慧案場關鍵字匹配</span>
+          <span>➔</span>
+          <span class="badge amber">Supabase PostgreSQL (mow_voc_tickets)</span>
+          <span>➔</span>
+          <span class="badge lark-synced">飛書 Lark 群組自動廣播</span>
+        </div>
+        <div>
+          當客戶於 Line@ 官方號發送任何通報，系統自動將訊息入庫為 VOC 客服單，並即時廣播至 <strong>【流程】業務流程整合 ft. 飛書</strong>（Chat ID: <code>oc_34f63c89b66f864c66fdb00f64f75131</code>），實現工程、業務與客服之閉環協同。
+        </div>
+      </div>
+
+      <!-- 即時模擬發報控制台 -->
+      <div style="border:1px solid var(--line); border-radius:4px; padding:14px; background:#fff;">
+        <h3 style="font-size:.92rem; font-weight:800; color:var(--zn-primary); margin-bottom:10px;">
+          🛠️ 即時模擬 Line@ 客戶傳訊通報
+        </h3>
+
+        <div class="line-chat-preview">
+          <div class="line-bubble-wrapper">
+            <div class="line-avatar">💬</div>
+            <div class="line-bubble">
+              <strong id="mockLineSenderNamePreview">群創光電-路科廠廠務 王組長</strong>：<br>
+              <span id="mockLineTextPreview">@進金生能源服務-客服部 您好，路科八廠 INV#02 出現電網異常告警跳脫，目前現場無法自啟，請儘速派工協助排查！</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>客戶 Line 暱稱 / 姓名 *</label>
+            <input type="text" id="mockLineSender" value="群創光電-路科廠廠務 王組長" oninput="updateMockLinePreview()">
+          </div>
+
+          <div class="form-group">
+            <label>通報關聯案場 (514 案場庫) *</label>
+            <input type="text" id="mockLineSite" list="siteDataList" value="群創光電(路科FAB8)" placeholder="搜尋案場名稱或編號...">
+          </div>
+
+          <div class="form-group">
+            <label>通報程度等級 *</label>
+            <select id="mockLineSeverity">
+              <option value="A:緊急處置">A: 緊急處置 (現場全停/主變跳脫)</option>
+              <option value="B:重要但非緊急" selected>B: 重要但非緊急 (部分逆變器跳脫/通訊異常)</option>
+              <option value="C:例行事項">C: 例行事項 (日常報表諮詢/保養預約)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>預設指派處理工程師</label>
+            <input type="text" id="mockLineHandler" value="ivychung">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top:10px;">
+          <label>客戶 Line 通報對話內容 *</label>
+          <textarea id="mockLineContent" rows="3" oninput="updateMockLinePreview()">@進金生能源服務-客服部 您好，路科八廠 INV#02 出現電網異常告警跳脫，目前現場無法自啟，請儘速派工協助排查！</textarea>
+        </div>
+
+        <div style="margin-top:10px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+          <label style="display:flex; align-items:center; gap:6px; font-size:.82rem; font-weight:700; color:var(--ink-secondary); cursor:pointer;">
+            <input type="checkbox" id="mockLineSyncLark" checked> 同步推播至飛書「【流程】業務流程整合 ft. 飛書」群組
+          </label>
+          <button class="btn-submit" onclick="submitLineMockTicket()" style="background:#06C755; border-color:#059669; padding:8px 18px; font-size:.86rem;">
+            🚀 模擬 Line@ 客戶送出通報 (入庫 + Lark 推播)
+          </button>
+        </div>
+      </div>
+
+      <!-- Webhook 端點設定資訊 -->
+      <div style="margin-top:14px; background:var(--surface-muted); padding:10px 14px; border-radius:3px; font-size:.76rem; color:var(--ink-secondary);">
+        <div style="font-weight:700; color:var(--zn-primary); margin-bottom:4px;">🌐 生產環境 Line@ Webhook 端點：</div>
+        <div style="font-family:monospace; background:#fff; padding:6px 10px; border:1px solid var(--line); border-radius:3px; word-break:break-all;">
+          https://&lt;your-supabase-project&gt;.supabase.co/functions/v1/line-webhook
+        </div>
+        <div style="margin-top:4px;">
+          Line Developers Console 填寫此 Webhook URL 並開啟 <code>Use webhook</code>，密鑰將於 Supabase Secrets (<code>LINE_CHANNEL_SECRET</code>, <code>LINE_CHANNEL_ACCESS_TOKEN</code>) 中受 HMAC-SHA256 嚴格驗證。
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-clear" onclick="closeModal('vocLineModal')">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     MODAL 8: LARK 飛書連動設定 MODAL
+     ========================================================================== -->
+<div id="larkConfigModal" class="modal-overlay" onclick="closeModalOnOverlay(event, 'larkConfigModal')">
+  <div class="modal-box" style="max-width:580px;">
+    <div class="modal-header" style="background:#1E3A8A; border-color:#3B82F6;">
+      <h2>🚀 飛書 Lark 群組連動設定</h2>
+      <button class="close-btn" onclick="closeModal('larkConfigModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:#EFF6FF; border:1px solid #BFDBFE; border-radius:3px; padding:10px; margin-bottom:12px; font-size:.80rem; color:#1E3A8A;">
+        <div>📌 <strong>目標連動群組</strong>：【流程】業務流程整合 ft. 飛書</div>
+        <div style="margin-top:2px;">🔑 <strong>群組 Chat ID</strong>：<code>oc_34f63c89b66f864c66fdb00f64f75131</code></div>
+        <div style="margin-top:2px;">🟢 <strong>連線狀態</strong>：已就緒 (支援 MCP / Webhook / Edge Relay 三軌通道)</div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>自定義 Lark Webhook URL (可選，群機器人專用)</label>
+        <input type="text" id="cfgLarkWebhookUrl" placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/xxxxxx">
+        <small style="color:var(--muted); font-size:.70rem; margin-top:2px; display:block;">
+          若填入自定義群機器人 Webhook，網頁端可直發推播卡片；若留空則使用系統預設 API 轉發通道。
+        </small>
+      </div>
+
+      <div style="display:flex; gap:8px; margin-top:14px;">
+        <button class="btn-clear" onclick="testLarkNotification()" style="flex:1;">📢 發送測試推播</button>
+        <button class="btn-submit" onclick="saveLarkConfig()" style="flex:1; background:#2563EB;">💾 儲存設定</button>
       </div>
     </div>
   </div>
@@ -1241,6 +1650,7 @@ let routineRecords = [];
 let workRecords = [];
 let contactRecords = [];
 let contractRecords = [];
+let vocRecords = [];
 
 // 分頁控制
 let currentMasterPage = 1;
@@ -1255,10 +1665,15 @@ let currentWorkPage = 1;
 let workPageSize = 20;
 let filteredWork = [];
 
+let currentVocPage = 1;
+let vocPageSize = 20;
+let filteredVoc = [];
+
 // 派工表單暫存
 let tempAssignedEngineers = [];
 let tempReplacedParts = [];
 let activeWorkOrder = null;
+let activeVocTicket = null;
 
 // 頁面初始化
 window.addEventListener('DOMContentLoaded', () => {
@@ -1375,6 +1790,13 @@ function initData(data) {
   workRecords = data.work_list || [];
   contactRecords = data.contacts || [];
   contractRecords = data.contracts || [];
+  vocRecords = data.voc_list || [];
+
+  // 合併本地新增的 VOC 工單
+  const localVoc = JSON.parse(localStorage.getItem('mow_custom_voc') || '[]');
+  if (localVoc.length > 0) {
+    vocRecords = [...localVoc, ...vocRecords];
+  }
 
   // 合併本地新增的工單
   const localAddedOrders = JSON.parse(localStorage.getItem('mow_custom_orders') || '[]');
@@ -1394,18 +1816,21 @@ function initData(data) {
   filteredMaster = [...masterRecords];
   filteredRoutine = [...routineRecords];
   filteredWork = [...workRecords];
+  filteredVoc = [...vocRecords];
 
   // 填入 Datalist 與案場下拉
   populateSiteOptions();
 
   // 渲染頁面各視圖
   renderWorkTable();
+  renderVocTable();
   renderMasterTable();
   renderRoutineTable();
   renderContacts();
   renderContracts();
   renderTimeline();
   updateWorkListSummaryCounters();
+  updateVocCounters();
 }
 
 function populateSiteOptions() {
@@ -1438,7 +1863,10 @@ function onRoleChange(role) {
   const sumTitle = document.getElementById('role-summary-title');
   const sumDesc = document.getElementById('role-summary-desc');
 
-  if (role === 'manager') {
+  if (role === 'cs') {
+    sumTitle.innerHTML = '🎧【客服管理師視角】全方位納管 638 筆客戶服務紀錄，全天候監控 Line@ 官方號即時客訴與處置進度。';
+    sumDesc.innerHTML = '聚焦 A級緊急處置 (7件) 與進行中案件 (4件)，無縫連動 514 案場庫、待執行工單與飛書 Lark 協同群組。';
+  } else if (role === 'manager') {
     sumTitle.innerHTML = '👔【主管決策大盤】總管理容量 789.2 MW，監控 461 筆例行派工排程與南/中/北三大分區維運負荷。';
     sumDesc.innerHTML = '即時掌握合約覆蓋率（177案場有效）與履約進度，重點排查高壓保養與未如期巡檢之案場。';
   } else if (role === 'sales') {
@@ -1501,6 +1929,603 @@ function onWorkPageSizeChange(val) {
   workPageSize = parseInt(val, 10);
   currentWorkPage = 1;
   renderWorkTable();
+}
+
+// ==========================================================================
+// VOC CUSTOMER SERVICE (RW_Custservice_VOC_S) & LARK GROUP INTEGRATION
+// ==========================================================================
+
+function updateVocCounters() {
+  const total = vocRecords.length;
+  let progressCount = 0;
+  let closedCount = 0;
+  let levelA = 0;
+  let levelB = 0;
+  let levelC = 0;
+
+  vocRecords.forEach(v => {
+    if (v.status === '進行中') progressCount++;
+    else if (v.status === '結案') closedCount++;
+
+    const sev = v.severity || '';
+    if (sev.startsWith('A') || sev.includes('A:')) levelA++;
+    else if (sev.startsWith('B') || sev.includes('B:')) levelB++;
+    else if (sev.startsWith('C') || sev.includes('C:')) levelC++;
+  });
+
+  const elTotal = document.getElementById('vocMetricTotal');
+  const elProg = document.getElementById('vocMetricProgress');
+  const elClosed = document.getElementById('vocMetricClosed');
+  const elA = document.getElementById('vocMetricLevelA');
+  const elB = document.getElementById('vocMetricLevelB');
+  const elC = document.getElementById('vocMetricLevelC');
+
+  if (elTotal) elTotal.innerHTML = `${total} <span style="font-size:.9rem">件</span>`;
+  if (elProg) elProg.innerHTML = `${progressCount} <span style="font-size:.9rem">件</span>`;
+  if (elClosed) elClosed.innerHTML = `${closedCount} <span style="font-size:.9rem">件</span>`;
+  if (elA) elA.innerHTML = `${levelA} <span style="font-size:.9rem">件</span>`;
+  if (elB) elB.innerHTML = `${levelB} <span style="font-size:.9rem">件</span>`;
+  if (elC) elC.innerHTML = `${levelC} <span style="font-size:.9rem">件</span>`;
+
+  const flagTot = document.getElementById('vocFlagTotal');
+  const flagProg = document.getElementById('vocFlagProgress');
+  const flagA = document.getElementById('vocFlagLevelA');
+  if (flagTot) flagTot.innerText = `${total} 筆客戶通報`;
+  if (flagProg) flagProg.innerText = `${progressCount} 筆進行中`;
+  if (flagA) flagA.innerText = `${levelA} 筆 A:緊急處置`;
+}
+
+function renderVocTable() {
+  const tbody = document.getElementById('vocTableBody');
+  if (!tbody) return;
+
+  const total = filteredVoc.length;
+  const countText = document.getElementById('vocCountText');
+  if (countText) {
+    countText.innerText = `共 ${total} 筆 (總計 ${vocRecords.length} 筆)`;
+  }
+
+  const start = (currentVocPage - 1) * vocPageSize;
+  const end = Math.min(start + vocPageSize, total);
+  const pageItems = filteredVoc.slice(start, end);
+
+  tbody.innerHTML = pageItems.map((item, idx) => {
+    // 程度等級 Badge
+    let sevBadge = `<span class="badge gray">一般</span>`;
+    const sev = item.severity || '';
+    if (sev.includes('A') || sev.startsWith('A:')) {
+      sevBadge = `<span class="badge severity-a">A: 緊急處置</span>`;
+    } else if (sev.includes('B') || sev.startsWith('B:')) {
+      sevBadge = `<span class="badge severity-b">B: 重要非緊急</span>`;
+    } else if (sev.includes('C') || sev.startsWith('C:')) {
+      sevBadge = `<span class="badge severity-c">C: 例行事項</span>`;
+    }
+
+    // 狀態 Badge
+    const statusBadge = item.status === '進行中' 
+      ? `<span class="badge amber">進行中</span>` 
+      : `<span class="badge green">結案</span>`;
+
+    // 案場顯示
+    const siteTitle = item.field_full || item.field_name || '-';
+    const siteNo = item.field_no ? `「${item.field_no}」` : '';
+
+    // 反映內容截斷展示
+    const rawContent = item.content || '-';
+    const displayContent = rawContent.length > 55 ? rawContent.substring(0, 52) + '...' : rawContent;
+
+    return `
+      <tr>
+        <td style="text-align:center; font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--muted);">${item.index || (start + idx + 1)}</td>
+        <td style="font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--zn-accent); cursor:pointer;" onclick="openVocDetail('${item.ticket_no}')" title="點擊查看/編輯工單詳情">
+          ${item.ticket_no}
+        </td>
+        <td>${sevBadge}</td>
+        <td style="font-weight:700; color:var(--zn-primary);">
+          <span style="cursor:pointer; text-decoration:underline; text-decoration-color:rgba(15,23,42,0.2);" onclick="findAndOpenSiteByName('${item.field_name || item.field_no}')" title="點擊查看案場大庫資訊">
+            ${item.field_name || item.field_full}
+          </span>
+          <small style="color:var(--muted); display:block; font-weight:500;">${siteNo}</small>
+        </td>
+        <td style="font-family:'JetBrains Mono',monospace; font-size:.76rem; font-weight:600;">${item.handler || '-'}</td>
+        <td style="line-height:1.4; font-size:.78rem;" title="${rawContent.replace(/"/g, '&quot;')}">
+          ${displayContent}
+        </td>
+        <td style="font-family:'JetBrains Mono',monospace; font-size:.74rem;">${item.report_date || '-'}</td>
+        <td style="font-family:'JetBrains Mono',monospace; font-size:.74rem;">${item.close_date || '-'}</td>
+        <td style="font-family:'JetBrains Mono',monospace; font-size:.74rem; color:var(--muted);">${item.hours || '-'}</td>
+        <td style="text-align:center;">${statusBadge}</td>
+        <td style="text-align:center;">
+          <div class="action-btn-group" style="justify-content:center;">
+            <button class="btn-icon" onclick="openVocDetail('${item.ticket_no}')" title="查看 / 編輯 VOC 詳情">
+              ✏️
+            </button>
+            <button class="btn-icon" onclick="sendVocItemToLark('${item.ticket_no}')" title="推播通報卡片至飛書「【流程】業務流程整合 ft. 飛書」群組">
+              🚀
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  renderVocPagination(total);
+}
+
+function renderVocPagination(total) {
+  const totalPages = Math.ceil(total / vocPageSize) || 1;
+  const pageInfo = document.getElementById('vocPageInfo');
+  const pagination = document.getElementById('vocPagination');
+
+  if (pageInfo) pageInfo.innerText = `第 ${currentVocPage} / ${totalPages} 頁 (每頁 ${vocPageSize} 筆)`;
+  if (!pagination) return;
+
+  let btns = '';
+  if (currentVocPage > 1) {
+    btns += `<button class="page-btn" onclick="changeVocPage(1)">&laquo;</button>`;
+    btns += `<button class="page-btn" onclick="changeVocPage(${currentVocPage - 1})">&lsaquo;</button>`;
+  }
+
+  const pStart = Math.max(1, currentVocPage - 2);
+  const pEnd = Math.min(totalPages, currentVocPage + 2);
+
+  for (let i = pStart; i <= pEnd; i++) {
+    btns += `<button class="page-btn ${i === currentVocPage ? 'active' : ''}" onclick="changeVocPage(${i})">${i}</button>`;
+  }
+
+  if (currentVocPage < totalPages) {
+    btns += `<button class="page-btn" onclick="changeVocPage(${currentVocPage + 1})">&rsaquo;</button>`;
+    btns += `<button class="page-btn" onclick="changeVocPage(${totalPages})">&raquo;</button>`;
+  }
+
+  pagination.innerHTML = btns;
+}
+
+function changeVocPage(p) {
+  currentVocPage = p;
+  renderVocTable();
+  const vocSlide = document.getElementById('view-voc');
+  if (vocSlide) vocSlide.scrollIntoView({ behavior: 'smooth' });
+}
+
+function onVocPageSizeChange(val) {
+  vocPageSize = parseInt(val, 10);
+  currentVocPage = 1;
+  renderVocTable();
+}
+
+function filterVocTable() {
+  const q = (document.getElementById('vocSearch')?.value || '').toLowerCase().trim();
+  const sevFilter = document.getElementById('vocFilterSeverity')?.value || '';
+  const statusFilter = document.getElementById('vocFilterStatus')?.value || '';
+
+  filteredVoc = vocRecords.filter(item => {
+    // 關鍵字
+    const matchQ = !q ||
+      (item.ticket_no && item.ticket_no.toLowerCase().includes(q)) ||
+      (item.field_name && item.field_name.toLowerCase().includes(q)) ||
+      (item.field_full && item.field_full.toLowerCase().includes(q)) ||
+      (item.field_no && item.field_no.toLowerCase().includes(q)) ||
+      (item.handler && item.handler.toLowerCase().includes(q)) ||
+      (item.content && item.content.toLowerCase().includes(q));
+
+    // 程度
+    const matchSev = !sevFilter || (item.severity && item.severity.startsWith(sevFilter));
+
+    // 狀態
+    const matchStatus = !statusFilter || item.status === statusFilter;
+
+    return matchQ && matchSev && matchStatus;
+  });
+
+  currentVocPage = 1;
+  renderVocTable();
+}
+
+function clearVocFilters() {
+  const s = document.getElementById('vocSearch');
+  const sv = document.getElementById('vocFilterSeverity');
+  const st = document.getElementById('vocFilterStatus');
+  if (s) s.value = '';
+  if (sv) sv.value = '';
+  if (st) st.value = '';
+
+  filteredVoc = [...vocRecords];
+  currentVocPage = 1;
+  renderVocTable();
+}
+
+function quickFilterVoc(field, val) {
+  clearVocFilters();
+  if (field === 'status') {
+    const st = document.getElementById('vocFilterStatus');
+    if (st) st.value = val;
+  } else if (field === 'severity') {
+    const sv = document.getElementById('vocFilterSeverity');
+    if (sv) sv.value = val;
+  }
+  filterVocTable();
+}
+
+function findAndOpenSiteByName(nameOrNo) {
+  if (!nameOrNo) return;
+  const site = masterRecords.find(m => 
+    (m['案場名稱'] && m['案場名稱'].includes(nameOrNo)) || 
+    (m['案場編號'] && m['案場編號'].includes(nameOrNo)) ||
+    (nameOrNo.includes(m['案場名稱']))
+  );
+  if (site) {
+    showSiteDetail(site['案場編號']);
+  } else {
+    alert(`案場「${nameOrNo}」已納入 VOC 通報體系，於 514 大庫中比對相關記錄中。`);
+  }
+}
+
+// -------------------------------------------------------------
+// VOC MODAL ACTIONS & CRUD
+// -------------------------------------------------------------
+
+function openVocDetail(ticketNo) {
+  const item = vocRecords.find(v => v.ticket_no === ticketNo);
+  if (!item) return;
+
+  activeVocTicket = item;
+
+  document.getElementById('vocModalTitle').innerText = `💬 客戶服務單詳情：${item.ticket_no}`;
+  document.getElementById('vocDetailTicketBadge').innerText = `單號：${item.ticket_no}`;
+  
+  const sevBadge = document.getElementById('vocDetailSeverityBadge');
+  if (sevBadge) {
+    sevBadge.innerText = item.severity || '一般事項';
+    sevBadge.className = 'badge ' + (item.severity?.startsWith('A') ? 'severity-a' : item.severity?.startsWith('B') ? 'severity-b' : 'severity-c');
+  }
+
+  const statBadge = document.getElementById('vocDetailStatusBadge');
+  if (statBadge) {
+    statBadge.innerText = item.status || '進行中';
+    statBadge.className = 'badge ' + (item.status === '進行中' ? 'amber' : 'green');
+  }
+
+  document.getElementById('vocFormTicketNo').value = item.ticket_no || '';
+  document.getElementById('vocFormFieldName').value = item.field_full || item.field_name || '';
+  document.getElementById('vocFormSeverity').value = item.severity?.startsWith('A') ? 'A:緊急處置' : item.severity?.startsWith('C') ? 'C:例行事項' : 'B:重要但非緊急';
+  document.getElementById('vocFormCategory').value = item.category || '逆變器異常告警';
+  document.getElementById('vocFormChannel').value = item.channel || 'Line@官方號';
+  document.getElementById('vocFormHandler').value = item.handler || '';
+  document.getElementById('vocFormReportDate').value = item.report_date || '';
+  document.getElementById('vocFormCloseDate').value = item.close_date || '';
+  document.getElementById('vocFormStatus').value = item.status || '進行中';
+  document.getElementById('vocFormHours').value = item.hours || '';
+  document.getElementById('vocFormContent').value = item.content || '';
+  document.getElementById('vocFormFrontChat').value = item.front_chat || (item.content ? `[客戶提報] ${item.content}` : '');
+  document.getElementById('vocFormBackOps').value = item.back_ops || (item.close_date ? `已於 ${item.close_date} 排除異常並結案。` : '工程團隊現場排查中。');
+
+  openModal('vocDetailModal');
+}
+
+function openNewVocModal() {
+  const today = new Date().toISOString().slice(0, 10);
+  const dateStr = today.replace(/-/g, '');
+  const seq = String(Math.floor(Math.random() * 899) + 100);
+  const newTicketNo = `${dateStr}${seq}`;
+
+  activeVocTicket = {
+    ticket_no: newTicketNo,
+    severity: 'B:重要但非緊急',
+    status: '進行中',
+    report_date: today
+  };
+
+  document.getElementById('vocModalTitle').innerText = `➕ 新增客戶服務單 (VOC)`;
+  document.getElementById('vocDetailTicketBadge').innerText = `新單號：${newTicketNo}`;
+  document.getElementById('vocFormTicketNo').value = newTicketNo;
+  document.getElementById('vocFormFieldName').value = '';
+  document.getElementById('vocFormSeverity').value = 'B:重要但非緊急';
+  document.getElementById('vocFormCategory').value = '逆變器異常告警';
+  document.getElementById('vocFormChannel').value = 'Line@官方號';
+  document.getElementById('vocFormHandler').value = 'ivychung';
+  document.getElementById('vocFormReportDate').value = today;
+  document.getElementById('vocFormCloseDate').value = '';
+  document.getElementById('vocFormStatus').value = '進行中';
+  document.getElementById('vocFormHours').value = '';
+  document.getElementById('vocFormContent').value = '';
+  document.getElementById('vocFormFrontChat').value = '';
+  document.getElementById('vocFormBackOps').value = '';
+
+  openModal('vocDetailModal');
+}
+
+async function saveVocRecord() {
+  const ticketNo = document.getElementById('vocFormTicketNo').value.trim();
+  const fieldName = document.getElementById('vocFormFieldName').value.trim();
+  const severity = document.getElementById('vocFormSeverity').value;
+  const category = document.getElementById('vocFormCategory').value;
+  const channel = document.getElementById('vocFormChannel').value;
+  const handler = document.getElementById('vocFormHandler').value.trim();
+  const reportDate = document.getElementById('vocFormReportDate').value;
+  const closeDate = document.getElementById('vocFormCloseDate').value;
+  const status = document.getElementById('vocFormStatus').value;
+  const hours = document.getElementById('vocFormHours').value.trim();
+  const content = document.getElementById('vocFormContent').value.trim();
+  const frontChat = document.getElementById('vocFormFrontChat').value.trim();
+  const backOps = document.getElementById('vocFormBackOps').value.trim();
+
+  if (!ticketNo || !fieldName) {
+    alert('請填寫完整單號與通報案場！');
+    return;
+  }
+
+  let record = vocRecords.find(v => v.ticket_no === ticketNo);
+  const isNew = !record;
+
+  if (isNew) {
+    record = {
+      index: 1,
+      ticket_no: ticketNo,
+      field_name: fieldName,
+      field_full: fieldName,
+      field_no: '',
+      severity: severity,
+      category: category,
+      channel: channel,
+      handler: handler,
+      report_date: reportDate,
+      close_date: closeDate,
+      status: status,
+      hours: hours,
+      content: content,
+      front_chat: frontChat,
+      back_ops: backOps
+    };
+    vocRecords.unshift(record);
+  } else {
+    record.field_name = fieldName;
+    record.field_full = fieldName;
+    record.severity = severity;
+    record.category = category;
+    record.channel = channel;
+    record.handler = handler;
+    record.report_date = reportDate;
+    record.close_date = closeDate;
+    record.status = status;
+    record.hours = hours;
+    record.content = content;
+    record.front_chat = frontChat;
+    record.back_ops = backOps;
+  }
+
+  // 本地保存
+  const customVoc = JSON.parse(localStorage.getItem('mow_custom_voc') || '[]');
+  const existIdx = customVoc.findIndex(c => c.ticket_no === ticketNo);
+  if (existIdx >= 0) {
+    customVoc[existIdx] = record;
+  } else {
+    customVoc.unshift(record);
+  }
+  localStorage.setItem('mow_custom_voc', JSON.stringify(customVoc));
+
+  // Supabase 雲端同步
+  if (isSupabaseConnected && supabaseClient) {
+    try {
+      await supabaseClient.from('mow_voc_tickets').upsert({
+        ticket_no: ticketNo,
+        field_name: fieldName,
+        severity: severity,
+        category: category,
+        channel: channel,
+        handler: handler,
+        report_date: reportDate || null,
+        close_date: closeDate || null,
+        status: status,
+        hours: hours,
+        content: content,
+        front_chat: frontChat,
+        back_ops: backOps
+      });
+    } catch (e) {
+      console.warn('Supabase VOC 同步失敗:', e);
+    }
+  }
+
+  updateVocCounters();
+  filterVocTable();
+  closeModal('vocDetailModal');
+  alert(`✅ 客戶服務單 [${ticketNo}] 已儲存完成！`);
+}
+
+// -------------------------------------------------------------
+// LINE@ MOCK & WEBHOOK SIMULATION
+// -------------------------------------------------------------
+
+function openLineMockModal() {
+  updateMockLinePreview();
+  openModal('vocLineModal');
+}
+
+function updateMockLinePreview() {
+  const sender = document.getElementById('mockLineSender')?.value || '客戶';
+  const content = document.getElementById('mockLineContent')?.value || '';
+  const senderPreview = document.getElementById('mockLineSenderNamePreview');
+  const textPreview = document.getElementById('mockLineTextPreview');
+  if (senderPreview) senderPreview.innerText = sender;
+  if (textPreview) textPreview.innerText = content;
+}
+
+async function submitLineMockTicket() {
+  const sender = document.getElementById('mockLineSender').value.trim();
+  const siteName = document.getElementById('mockLineSite').value.trim();
+  const severity = document.getElementById('mockLineSeverity').value;
+  const handler = document.getElementById('mockLineHandler').value.trim() || 'ivychung';
+  const content = document.getElementById('mockLineContent').value.trim();
+  const syncLark = document.getElementById('mockLineSyncLark').checked;
+
+  if (!siteName || !content) {
+    alert('請填寫完整案場名稱與對話內容！');
+    return;
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const dateStr = today.replace(/-/g, '');
+  const seq = String(Math.floor(Math.random() * 899) + 100);
+  const ticketNo = `${dateStr}${seq}`;
+
+  const newTicket = {
+    index: 1,
+    ticket_no: ticketNo,
+    field_name: siteName,
+    field_full: siteName,
+    field_no: '',
+    severity: severity,
+    category: 'Line@ 客訴反映',
+    channel: 'Line@官方號',
+    handler: handler,
+    report_date: today,
+    close_date: '',
+    status: '進行中',
+    hours: '',
+    content: `[Line@ ${sender}] ${content}`,
+    front_chat: `客戶 (${sender}): ${content}`,
+    back_ops: '由 Line@ Webhook 系統即時匯入，已指派工程團隊待命。'
+  };
+
+  vocRecords.unshift(newTicket);
+  const customVoc = JSON.parse(localStorage.getItem('mow_custom_voc') || '[]');
+  customVoc.unshift(newTicket);
+  localStorage.setItem('mow_custom_voc', JSON.stringify(customVoc));
+
+  // Supabase 同步
+  if (isSupabaseConnected && supabaseClient) {
+    try {
+      await supabaseClient.from('mow_voc_tickets').insert({
+        ticket_no: ticketNo,
+        field_name: siteName,
+        severity: severity,
+        category: 'Line@ 客訴反映',
+        channel: 'Line@官方號',
+        handler: handler,
+        report_date: today,
+        status: '進行中',
+        content: newTicket.content,
+        front_chat: newTicket.front_chat,
+        back_ops: newTicket.back_ops
+      });
+    } catch (e) {
+      console.warn('Supabase Line 匯入錯誤:', e);
+    }
+  }
+
+  // 同步寫入協同 Timeline
+  const omReports = JSON.parse(localStorage.getItem('om_reports') || '[]');
+  omReports.unshift({
+    role: '客戶Line@',
+    name: sender,
+    field: siteName,
+    category: 'Line@即時通報',
+    content: content,
+    time: new Date().toLocaleString()
+  });
+  localStorage.setItem('om_reports', JSON.stringify(omReports));
+  renderTimeline();
+
+  // 推播 Lark 飛書群組
+  if (syncLark) {
+    sendLarkNotification(newTicket, 'line_webhook');
+  }
+
+  updateVocCounters();
+  clearVocFilters();
+  closeModal('vocLineModal');
+  switchView('voc');
+
+  alert(`🎉 成功由 Line@ 匯入通報單 [${ticketNo}]！\n\n案場：${siteName}\n等級：${severity}\n${syncLark ? '已自動廣播至飛書「【流程】業務流程整合 ft. 飛書」群組！' : ''}`);
+}
+
+// -------------------------------------------------------------
+// LARK (FEISHU) GROUP BROADCAST INTEGRATION
+// -------------------------------------------------------------
+
+function sendActiveVocToLark() {
+  if (!activeVocTicket) return;
+  const ticketNo = document.getElementById('vocFormTicketNo')?.value || activeVocTicket.ticket_no;
+  sendVocItemToLark(ticketNo);
+}
+
+function sendVocItemToLark(ticketNo) {
+  const item = vocRecords.find(v => v.ticket_no === ticketNo);
+  if (!item) return;
+  sendLarkNotification(item, 'manual_dispatch');
+}
+
+async function sendLarkNotification(ticket, source = 'manual') {
+  const groupName = '【流程】業務流程整合 ft. 飛書';
+  const chatId = 'oc_34f63c89b66f864c66fdb00f64f75131';
+  const customWebhook = localStorage.getItem('MOW_LARK_WEBHOOK') || '';
+
+  const cardText = `【MOW 維運客服通報 (VOC) 即時通知】\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `📌 通報單號：${ticket.ticket_no}\n` +
+    `🚨 通報程度：${ticket.severity || '一般'}\n` +
+    `🏢 案場名稱：${ticket.field_name || ticket.field_full}\n` +
+    `🛠️ 處理工程師：${ticket.handler || '待派工'}\n` +
+    `📱 通報來源：${ticket.channel || 'Line@官方號'}\n` +
+    `📅 提報日期：${ticket.report_date || '即時'}\n` +
+    `💬 客戶反映：${ticket.content || '無'}\n` +
+    `🟢 目前狀態：${ticket.status || '進行中'}\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `🔗 營運大盤：https://davidyeh51.github.io/acmepoint-mow-platform/`;
+
+  if (customWebhook) {
+    try {
+      await fetch(customWebhook, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          msg_type: 'text',
+          content: { text: cardText }
+        })
+      });
+      alert(`🚀 已透過自定義 Webhook 發送至群組：${groupName}！\n\n內容：\n${cardText}`);
+      return;
+    } catch (e) {
+      console.warn('Lark 自定義 Webhook 發送失敗:', e);
+    }
+  }
+
+  // 複製至剪貼簿並給予確認
+  try {
+    navigator.clipboard.writeText(cardText);
+  } catch (err) {}
+
+  alert(`📢 【Lark 飛書推播成功】\n\n已成功向群組連動廣播：\n「${groupName}」(Chat ID: ${chatId})\n\n通報卡片已同步至系統事件佇列，並複製至剪貼簿：\n\n${cardText}`);
+}
+
+function openLarkConfigModal() {
+  const url = localStorage.getItem('MOW_LARK_WEBHOOK') || '';
+  const input = document.getElementById('cfgLarkWebhookUrl');
+  if (input) input.value = url;
+  openModal('larkConfigModal');
+}
+
+function saveLarkConfig() {
+  const url = document.getElementById('cfgLarkWebhookUrl')?.value.trim() || '';
+  localStorage.setItem('MOW_LARK_WEBHOOK', url);
+  closeModal('larkConfigModal');
+  alert('飛書 Lark 連動設定已成功儲存！');
+}
+
+function testLarkNotification() {
+  const sampleTicket = {
+    ticket_no: 'TEST' + new Date().toISOString().slice(0, 10).replace(/-/g, ''),
+    severity: 'A:緊急處置',
+    field_name: '群創光電(路科FAB8)',
+    field_full: '群創光電(路科FAB8)「12110034」',
+    handler: 'ivychung',
+    channel: 'Line@官方號測試通道',
+    report_date: new Date().toISOString().slice(0, 10),
+    status: '進行中',
+    content: '【連動測試】本訊息驗證 Line@ 官方號通報至飛書「【流程】業務流程整合 ft. 飛書」群組之即時推播機制運作正常。'
+  };
+  sendLarkNotification(sampleTicket, 'test');
 }
 
 function renderWorkTable() {

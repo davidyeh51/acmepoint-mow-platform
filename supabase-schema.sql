@@ -117,7 +117,36 @@ CREATE TABLE IF NOT EXISTS public.mow_collaborative_reports (
 );
 
 -- ------------------------------------------------------------------------------
--- 5. 索引優化 (加速高頻查詢與篩選)
+-- 5. 客戶服務通報表 (mow_voc_tickets) - 復刻 RW_Custservice_VOC_S 與 Line@ 直接匯入
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.mow_voc_tickets (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    ticket_no VARCHAR(64) UNIQUE NOT NULL,       -- 客服單號 (例如: 20261015001)
+    field_no VARCHAR(64) REFERENCES public.mow_sites(field_no) ON DELETE SET NULL,
+    field_name VARCHAR(255) NOT NULL,            -- 案場名稱
+    customer_name VARCHAR(255),                  -- 客戶名稱 (自動帶出)
+    contact_person VARCHAR(128),                 -- 問題聯絡人
+    channel VARCHAR(64) DEFAULT '線上 (Line@)',  -- 管道 (線上 (Line@) / 來電 / 來函 / 其它)
+    severity VARCHAR(64) DEFAULT 'B:重要但非緊急', -- 程度 (A:緊急 / B:重要 / C:例行)
+    category VARCHAR(128) DEFAULT '發電狀況(INV)', -- 分類 (發電狀況 / 監控斷線 / 畫面數據異常 / 報表異常 / 合約諮詢 / 報價)
+    status VARCHAR(64) DEFAULT '進行中',         -- 狀態 (進行中 / 結案 / Pending)
+    handler VARCHAR(128) DEFAULT 'ivychung',     -- 服務人員
+    line_user_id VARCHAR(128),                   -- Line@ 提報用戶 ID
+    line_message_id VARCHAR(128),                -- Line@ 訊息 ID
+    customer_content TEXT NOT NULL,              -- 客戶反映內容 (Line@ 原始訊息)
+    front_desk_reply TEXT,                       -- 前台處理
+    back_desk_notes TEXT,                        -- 後台處理
+    report_date DATE DEFAULT CURRENT_DATE,       -- 反映日期
+    close_date DATE,                             -- 結案日期
+    hours_spent VARCHAR(64),                     -- 完成工時
+    lark_synced BOOLEAN DEFAULT FALSE,           -- 是否已串接推播至飛書/Lark
+    lark_message_id VARCHAR(128),                -- Lark 訊息 ID
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ------------------------------------------------------------------------------
+-- 6. 索引優化 (加速高頻查詢與篩選)
 -- ------------------------------------------------------------------------------
 CREATE INDEX IF NOT EXISTS idx_mow_orders_status ON public.mow_work_orders(status);
 CREATE INDEX IF NOT EXISTS idx_mow_orders_engineer ON public.mow_work_orders(engineer);
@@ -126,9 +155,12 @@ CREATE INDEX IF NOT EXISTS idx_mow_orders_due ON public.mow_work_orders(due_date
 CREATE INDEX IF NOT EXISTS idx_mow_sites_zone ON public.mow_sites(zone);
 CREATE INDEX IF NOT EXISTS idx_mow_sites_field_no ON public.mow_sites(field_no);
 CREATE INDEX IF NOT EXISTS idx_mow_records_order ON public.mow_work_records(work_order_id);
+CREATE INDEX IF NOT EXISTS idx_mow_voc_status ON public.mow_voc_tickets(status);
+CREATE INDEX IF NOT EXISTS idx_mow_voc_ticket_no ON public.mow_voc_tickets(ticket_no);
+CREATE INDEX IF NOT EXISTS idx_mow_voc_field_name ON public.mow_voc_tickets(field_name);
 
 -- ------------------------------------------------------------------------------
--- 6. 自動更新 updated_at 觸發器
+-- 7. 自動更新 updated_at 觸發器
 -- ------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -150,21 +182,27 @@ CREATE TRIGGER update_mow_records_modtime
     BEFORE UPDATE ON public.mow_work_records
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+CREATE TRIGGER update_mow_voc_modtime
+    BEFORE UPDATE ON public.mow_voc_tickets
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 -- ------------------------------------------------------------------------------
--- 7. 行級安全策略 (Row Level Security - RLS)
+-- 8. 行級安全策略 (Row Level Security - RLS)
 -- ------------------------------------------------------------------------------
 ALTER TABLE public.mow_sites ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.mow_work_orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.mow_work_records ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.mow_collaborative_reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.mow_voc_tickets ENABLE ROW LEVEL SECURITY;
 
--- 允許所有人 (含公開匿名者與 GitHub Pages 訪客) 讀取案場與工單
+-- 允許所有人 (含公開匿名者與 GitHub Pages 訪客) 讀取
 CREATE POLICY "Public Read mow_sites" ON public.mow_sites FOR SELECT USING (true);
 CREATE POLICY "Public Read mow_work_orders" ON public.mow_work_orders FOR SELECT USING (true);
 CREATE POLICY "Public Read mow_work_records" ON public.mow_work_records FOR SELECT USING (true);
 CREATE POLICY "Public Read mow_collaborative_reports" ON public.mow_collaborative_reports FOR SELECT USING (true);
+CREATE POLICY "Public Read mow_voc_tickets" ON public.mow_voc_tickets FOR SELECT USING (true);
 
--- 允許經由前端操作寫入/更新工單與回報 (使用 anon key 或 authenticated)
+-- 允許經由前端操作寫入/更新工單、紀錄與 VOC 客服單
 CREATE POLICY "Allow Insert mow_work_orders" ON public.mow_work_orders FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow Update mow_work_orders" ON public.mow_work_orders FOR UPDATE USING (true);
 
@@ -172,6 +210,9 @@ CREATE POLICY "Allow Insert mow_work_records" ON public.mow_work_records FOR INS
 CREATE POLICY "Allow Update mow_work_records" ON public.mow_work_records FOR UPDATE USING (true);
 
 CREATE POLICY "Allow Insert mow_collaborative_reports" ON public.mow_collaborative_reports FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Allow Insert mow_voc_tickets" ON public.mow_voc_tickets FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow Update mow_voc_tickets" ON public.mow_voc_tickets FOR UPDATE USING (true);
 
 -- ------------------------------------------------------------------------------
 -- 8. 儲存桶配置 (Storage Bucket: mow-attachments)
