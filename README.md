@@ -6,6 +6,10 @@
 [![Backend](https://img.shields.io/badge/Backend-Supabase%20BaaS-3ECF8E?logo=supabase)](https://supabase.com)
 [![Design](https://img.shields.io/badge/Design%20System-Zero--Noise%20Tri--Consulting-051C2C)](https://mckinsey.com)
 
+## 開發接手與後續方向
+
+[2026-10-21 開發接手文件](./docs/DEVELOPMENT_HANDOFF.md) 記錄已確認架構、VOC 入庫修復、增量遷移、驗證方式與維運 AI 助理路線。現有資料數量為快照描述，正式雲端服務與資料新鮮度需另行驗證。
+
 ---
 
 ## 📖 專案概述 (Executive Overview)
