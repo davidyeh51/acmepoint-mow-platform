@@ -139,6 +139,8 @@ CREATE TABLE IF NOT EXISTS public.mow_voc_tickets (
     report_date DATE DEFAULT CURRENT_DATE,       -- 反映日期
     close_date DATE,                             -- 結案日期
     hours_spent VARCHAR(64),                     -- 完成工時
+    confirmer VARCHAR(128),                     -- 確認者
+    confirmed_at TIMESTAMPTZ,                   -- 確認時間
     lark_synced BOOLEAN DEFAULT FALSE,           -- 是否已串接推播至飛書/Lark
     lark_message_id VARCHAR(128),                -- Lark 訊息 ID
     created_at TIMESTAMPTZ DEFAULT NOW(),

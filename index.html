@@ -2180,7 +2180,48 @@ function renderVocTable() {
   renderVocPagination(total);
 }
 
-function quickConfirmVocTicket(ticketNo) {
+// 將離線介面欄位轉為 supabase-schema.sql 的 VOC 欄位。
+function toVocDatabaseRecord(record) {
+  return {
+    ticket_no: record.ticket_no,
+    field_name: record.field_name || record.field_full,
+    severity: record.severity,
+    category: record.category,
+    channel: record.channel,
+    handler: record.handler,
+    report_date: record.report_date || null,
+    close_date: record.close_date || null,
+    status: record.status,
+    hours_spent: record.hours || '',
+    confirmer: record.confirmer || null,
+    confirmed_at: record.confirmed_at ? new Date(record.confirmed_at).toISOString() : null,
+    customer_content: record.content || '',
+    front_desk_reply: record.front_chat || '',
+    back_desk_notes: record.back_ops || ''
+  };
+}
+
+// 本地資料已先儲存；明確區分雲端成功、失敗與離線。
+async function syncVocRecordToCloud(record) {
+  if (!isSupabaseConnected || !supabaseClient) return 'offline';
+  try {
+    const { error } = await supabaseClient.from('mow_voc_tickets')
+      .upsert(toVocDatabaseRecord(record), { onConflict: 'ticket_no' });
+    if (error) throw error;
+    return 'synced';
+  } catch (error) {
+    console.warn('Supabase VOC 同步失敗:', error);
+    return 'failed';
+  }
+}
+
+function vocStorageMessage(syncStatus) {
+  if (syncStatus === 'synced') return '已儲存至本機與雲端。';
+  if (syncStatus === 'failed') return '已儲存至本機；雲端同步失敗，請檢查連線與資料表設定後重新儲存。';
+  return '已儲存至本機（離線模式）。';
+}
+
+async function quickConfirmVocTicket(ticketNo) {
   const item = vocRecords.find(v => v.ticket_no === ticketNo);
   if (!item) return;
 
@@ -2211,19 +2252,8 @@ function quickConfirmVocTicket(ticketNo) {
   }
   localStorage.setItem('mow_custom_voc', JSON.stringify(customVoc));
 
-  // Supabase 雲端同步
-  if (isSupabaseConnected && supabaseClient) {
-    try {
-      supabaseClient.from('mow_voc_tickets').update({
-        confirmer: item.confirmer,
-        confirmed_at: new Date().toISOString()
-      }).eq('ticket_no', ticketNo).then(({ error }) => {
-        if (error) console.warn('Supabase 更新確認者失敗:', error);
-      });
-    } catch (e) {
-      console.warn('Supabase 確認者例外:', e);
-    }
-  }
+  // 以 ticket_no 寫入完整資料，亦支援尚未匯入雲端的歷史工單。
+  const syncStatus = await syncVocRecordToCloud(item);
 
   // 同步寫入協同 Timeline
   const omReports = JSON.parse(localStorage.getItem('om_reports') || '[]');
@@ -2252,7 +2282,7 @@ function quickConfirmVocTicket(ticketNo) {
   }, 'confirmed');
 
   renderVocTable();
-  alert(`✅ 客戶服務工單 [${ticketNo}] 已由「${item.confirmer}」完成確認簽核！\n\n已同步廣播至飛書「【流程】業務流程整合 ft. 飛書」群組。`);
+  alert(`客戶服務工單 [${ticketNo}] 已由「${item.confirmer}」完成確認簽核。\n${vocStorageMessage(syncStatus)}`);
 }
 
 function syncVocFromLine() {
@@ -2491,35 +2521,12 @@ async function saveVocRecord() {
   }
   localStorage.setItem('mow_custom_voc', JSON.stringify(customVoc));
 
-  // Supabase 雲端同步
-  if (isSupabaseConnected && supabaseClient) {
-    try {
-      await supabaseClient.from('mow_voc_tickets').upsert({
-        ticket_no: ticketNo,
-        field_name: fieldName,
-        severity: severity,
-        category: category,
-        channel: channel,
-        handler: handler,
-        report_date: reportDate || null,
-        close_date: closeDate || null,
-        status: status,
-        hours: hours,
-        confirmer: confirmer,
-        confirmed_at: confirmedAt ? new Date(confirmedAt).toISOString() : null,
-        content: content,
-        front_chat: frontChat,
-        back_ops: backOps
-      });
-    } catch (e) {
-      console.warn('Supabase VOC 同步失敗:', e);
-    }
-  }
+  const syncStatus = await syncVocRecordToCloud(record);
 
   updateVocCounters();
   filterVocTable();
   closeModal('vocDetailModal');
-  alert(`✅ 客戶服務單 [${ticketNo}] 已儲存完成！`);
+  alert(`客戶服務單 [${ticketNo}]：${vocStorageMessage(syncStatus)}`);
 }
 
 // -------------------------------------------------------------
@@ -2615,26 +2622,7 @@ async function submitLineMockTicket() {
   customVoc.unshift(newTicket);
   localStorage.setItem('mow_custom_voc', JSON.stringify(customVoc));
 
-  // Supabase 同步
-  if (isSupabaseConnected && supabaseClient) {
-    try {
-      await supabaseClient.from('mow_voc_tickets').insert({
-        ticket_no: ticketNo,
-        field_name: siteName,
-        severity: severity,
-        category: 'Line@ 客訴反映',
-        channel: 'Line@官方號',
-        handler: handler,
-        report_date: today,
-        status: '進行中',
-        content: newTicket.content,
-        front_chat: newTicket.front_chat,
-        back_ops: newTicket.back_ops
-      });
-    } catch (e) {
-      console.warn('Supabase Line 匯入錯誤:', e);
-    }
-  }
+  const syncStatus = await syncVocRecordToCloud(newTicket);
 
   // 同步寫入協同 Timeline
   const omReports = JSON.parse(localStorage.getItem('om_reports') || '[]');
@@ -2659,7 +2647,7 @@ async function submitLineMockTicket() {
   closeModal('vocLineModal');
   switchView('voc');
 
-  alert(`🎉 成功由 Line@ 匯入通報單 [${ticketNo}]！\n\n案場：${siteName}\n等級：${severity}\n${syncLark ? '已自動廣播至飛書「【流程】業務流程整合 ft. 飛書」群組！' : ''}`);
+  alert(`Line@ 模擬通報單 [${ticketNo}]\n${vocStorageMessage(syncStatus)}\n案場：${siteName}\n等級：${severity}`);
 }
 
 // -------------------------------------------------------------

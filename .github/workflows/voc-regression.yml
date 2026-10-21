@@ -1,0 +1,26 @@
+name: VOC regression checks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: ['codex/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  voc-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check test syntax
+        run: |
+          node --check scripts/voc-regression-suite.mjs
+          node --check scripts/test-voc-regression.mjs
+      - name: Run isolated VOC regression checks
+        run: node scripts/test-voc-regression.mjs

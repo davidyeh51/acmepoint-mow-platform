@@ -22,8 +22,11 @@ serve(async (req: Request) => {
     const rawBody = await req.text();
     const signature = req.headers.get("x-line-signature") || "";
 
-    // 驗證 Line HMAC-SHA256 簽名 (若未設置 Secret 則放行以利測試)
-    if (LINE_CHANNEL_SECRET && !(await verifyLineSignature(rawBody, signature, LINE_CHANNEL_SECRET))) {
+    // 未配置 Secret 時拒絕受理，避免未驗證的訊息直接入庫。
+    if (!LINE_CHANNEL_SECRET) {
+      return new Response("LINE channel secret is not configured", { status: 503 });
+    }
+    if (!(await verifyLineSignature(rawBody, signature, LINE_CHANNEL_SECRET))) {
       return new Response("Invalid Signature", { status: 401 });
     }
 
@@ -67,7 +70,7 @@ async function processLineMessage(event: any) {
   const severity = determineSeverity(userMessage);
 
   // 4. 入庫至 Supabase 資料表 mow_voc_tickets
-  const { data, error } = await supabase.from("mow_voc_tickets").insert({
+  const { error } = await supabase.from("mow_voc_tickets").insert({
     ticket_no: ticketNo,
     field_name: siteName,
     severity: severity,
@@ -76,13 +79,17 @@ async function processLineMessage(event: any) {
     handler: "ivychung", // 預設客服維運窗口
     report_date: new Date().toISOString().slice(0, 10),
     status: "進行中",
-    content: `[Line@ 客戶 ID: ${userId}] ${userMessage}`,
-    front_chat: `客戶: ${userMessage}`,
-    back_ops: `由 Line Webhook 自動立案 (單號: ${ticketNo})，待維運主管分派工程師。`,
+    line_user_id: userId,
+    line_message_id: event.message.id || null,
+    customer_content: `[Line@ 客戶 ID: ${userId}] ${userMessage}`,
+    front_desk_reply: `客戶: ${userMessage}`,
+    back_desk_notes: `由 Line Webhook 自動立案 (單號: ${ticketNo})，待維運主管分派工程師。`,
   });
 
   if (error) {
     console.error("Supabase 寫入失敗:", error);
+    // 中止廣播與成功回覆，由外層回傳失敗，讓 LINE 可重送。
+    throw new Error("VOC ticket could not be saved");
   }
 
   // 5. 即時廣播推播至 Lark 飛書群組「【流程】業務流程整合 ft. 飛書」
